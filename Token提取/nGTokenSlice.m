@@ -34,7 +34,7 @@
 %% Global Variables
 % Global Variables will soon become the function arguments.
 % 图片地址
-IMG_FILE_NAME = '3.png';
+IMG_FILE_NAME = '2.png';
 
 % 像素单位
 Unit_Pixel = 64;
