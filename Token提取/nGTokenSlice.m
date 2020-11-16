@@ -31,10 +31,11 @@
 %   nGLenRow            :每行token长度(向量长度nGHeight)
 %   ImgSet              :图片集合
 
+clear sumDivide
 %% Global Variables
 % Global Variables will soon become the function arguments.
 % 图片地址
-IMG_FILE_NAME = '2.png';
+IMG_FILE_NAME = '00.png';
 
 % 像素单位
 Unit_Pixel = 64;
@@ -46,19 +47,20 @@ isDisplay = true;
 % 修正为灰度图片(0为黑色，255为白色)
 imageOrig = rgb2gray(imread(IMG_FILE_NAME));
 
-% 利用统计信息去除周围黄色部分
-[N,~] = histcounts(imageOrig,linspace(0,255,64));
-imageBW = imageOrig < 4 * (find(diff(N) > 0,1,'first') + 1);
+% % 利用统计信息去除周围黄色部分
+% [N,~] = histcounts(imageOrig,linspace(0,255,64));
+% imageBW = imageOrig < 4 * (find(diff(N) > 0,1,'first') + 1);
+imageBW = 1 - imbinarize(imageOrig, graythresh(imageOrig));
+
 
 %% 计算题面长宽
-
 % 逐列求和，得出行token的分割线
 [nGWidth,LocsGridLineS,LocsGridLineE,nGIntervalRow] = ...
-    sumDivide(sum(imageBW,1));
+    sumDivide(sum(imageBW,1),isDisplay);
 
 % 逐行求和，得出列token的分割线
 [nGHeight,LocsGridRowS,LocsGridRowE,nGIntervalLine] = ...
-    sumDivide(sum(imageBW,2));
+    sumDivide(sum(imageBW,2),isDisplay);
 
 try
     close('分割线演示');
@@ -82,14 +84,37 @@ for ii = 1:length(nGIntervalLine)
         'Color','red');
 end
 
+%% 取单元图片切片
+% 列token，自上向下，自左向右处理
+for ii = 1:length(LocsGridLineS) - 1
+    for jj = 1:length(nGIntervalLine) - 1
+        imgSet = imageOrig(nGIntervalLine(jj):nGIntervalLine(jj+1),...
+            LocsGridLineE(ii):LocsGridLineS(ii+1));
+        imshow(imgSet);
+        pause(0.01)
+    end
+end
+% 行token，自左向右，自上向下处理
+for ii = 1:length(LocsGridRowS) - 1
+    for jj = 1:length(nGIntervalRow) - 1
+        imgSet = imageOrig(LocsGridRowE(ii):LocsGridRowS(ii+1),...
+            nGIntervalRow(jj):nGIntervalRow(jj+1));
+        imshow(imgSet);
+        pause(0.01)
+    end
+end
+
+
 %%
 function [nGWidth,LocsGridLineS,LocsGridLineE,nGIntervalRow] = ...
     sumDivide(imgSumLine,isDisplay)
 % 根据列求和信息，计算宽度、网格列位置（起始/终端）、行token分割线横线坐标
 
 if(nargin < 2)
-    isDisplay = true;
+    isDisplay = false;
 end
+
+persistent isDualFigure
 
 % 第一次以0.9倍极大值为双肩门限确定网格位置(竖向网格)
 [~,LocsGridLineS,Width] = findpeaks(imgSumLine,...
@@ -110,18 +135,26 @@ xPeriod = mean(diff(LocsGridLineS) - Width(1:end-1));
     'MinPeakDistance',0.5 * xPeriod);
 
 % 行token竖向分割线间隔
-nGIntervalRow = linspace(LocsInterval(1) + WIDTHS2(1),LocsGridLineS(1) - 1,...
-    length(LocsInterval));
+nGIntervalRow = round(linspace(LocsInterval(1) + WIDTHS2(1),...
+    LocsGridLineS(1) - 1, length(LocsInterval)));
 
 if(isDisplay)
-    try
-        close('侧向求和分割结果');
-    catch ME
-        if(~strcmp(ME.identifier, 'MATLAB:close:WindowNotFound'))
-            rethrow(ME);
+    if(isempty(isDualFigure))
+        try
+            close('侧向求和分割结果');
+        catch ME
+            if(~strcmp(ME.identifier, 'MATLAB:close:WindowNotFound'))
+                rethrow(ME);
+            end
         end
+        figure('Name','侧向求和分割结果');
+        subplot(2,1,1)
+        isDualFigure = true;
+    else
+        isDualFigure = [];
+        subplot(2,1,2)
     end
-    figure('Name','侧向求和分割结果');
+
     % 侧向求和结果
     plot(imgSumLine,'LineWidth',0.8);
     hold on
