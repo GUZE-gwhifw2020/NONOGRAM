@@ -1,3 +1,5 @@
+function [nGWidth,nGHeight,ImgSetPatchLine,ImgSetPatchRow] = ...
+    nGTokenSlice(IMG_FILE_NAME, Unit_Pixel, isDisplay)
 %% Birth Certificate
 % ===================================== %
 % DATE OF BIRTH:    2020.11.16
@@ -19,33 +21,35 @@
 %   first. The tokenStr should be '1.2/3/4.5/6.7'.
 %   The slice procedure will follow the same sequence.
 
-%   The procudure will produce an ImgSet of the size of 
-%   Unit_Pixel * Unit_Pixel * 1 * 7
-%   as well as two vectors to identify the number of tokens in each row or
-%   line, i.e. [2 1], [2 2]
-%   
+%   The procudure will produce two ImgSetCells (row and line respectively)
+%   Each cell element has the shape of 
+%       Unit_Pixel * Unit_Pixel * 1 * k
+%   k is the token number in corresponding row(line)
+
 
 %   nGWidth             :宽度(列个数)
 %   nGHeight            :高度(行个数)
-%   nGLenLine        	:每列token长度(向量长度nGWidth)
-%   nGLenRow            :每行token长度(向量长度nGHeight)
 %   ImgSetPatchLine     :列token图片集合
 %   ImgSetPatchRow      :行token图片集合
-
 
 clear sumDivide
 %% Global Variables
 % Global Variables will soon become the function arguments.
 % 图片地址
-IMG_FILE_NAME = '00.png';
+% IMG_FILE_NAME = '00.png';
 
 % 像素单位
-Unit_Pixel = 64;
+% Unit_Pixel = 64;
 
 % 是否展示参考线
-isDisplay = true;
+% isDisplay = true;
 
-% 
+if(nargin < 3)
+    isDisplay = false;
+    if(nargin < 2)
+        Unit_Pixel = 64;
+    end
+end
 
 %% 读取照片
 % 修正为灰度图片(0为黑色，255为白色)
@@ -66,28 +70,29 @@ imageBW = 1 - imbinarize(imageOrig, graythresh(imageOrig));
 [nGHeight,LocsGridRowS,LocsGridRowE,nGIntervalLine] = ...
     sumDivide(sum(imageBW,2),isDisplay);
 
-try
-    close('分割线演示');
-catch ME
-    if(~strcmp(ME.identifier, 'MATLAB:close:WindowNotFound'))
-        rethrow(ME);
+if(isDisplay)
+    try
+        close('分割线演示');
+    catch ME
+        if(~strcmp(ME.identifier, 'MATLAB:close:WindowNotFound'))
+            rethrow(ME);
+        end
+    end
+    figure('Name','分割线演示');
+    % 原始图片
+    imshow(imageOrig);
+    hold on
+    for ii = 1:length(nGIntervalRow)
+        % 行token竖向分割线
+        line(nGIntervalRow([ii ii]),[LocsGridRowE(1) LocsGridRowS(end)],...
+            'Color','red');
+    end
+    for ii = 1:length(nGIntervalLine)
+        % 列token横向分割线
+        line([LocsGridLineE(1) LocsGridLineS(end)],nGIntervalLine([ii ii]),...
+            'Color','red');
     end
 end
-figure('Name','分割线演示');
-% 原始图片
-imshow(imageOrig);
-hold on
-for ii = 1:length(nGIntervalRow)
-    % 行token竖向分割线
-    line(nGIntervalRow([ii ii]),[LocsGridRowE(1) LocsGridRowS(end)],...
-        'Color','red');
-end
-for ii = 1:length(nGIntervalLine)
-    % 列token横向分割线
-    line([LocsGridLineE(1) LocsGridLineS(end)],nGIntervalLine([ii ii]),...
-        'Color','red');
-end
-
 %% 取单元图片切片
 % 列token，自上向下，自左向右处理
 ImgSetPatchLine = cell(length(LocsGridLineS) - 1,1);
@@ -120,6 +125,7 @@ for ii = 1:length(LocsGridRowS) - 1
             % pause(0.4)
         end
     end
+end
 end
 
 %%
@@ -183,7 +189,7 @@ if(isDisplay)
         isDualFigure = [];
         subplot(2,1,2)
     end
-
+    
     % 侧向求和结果
     plot(imgSumLine,'LineWidth',0.8);
     hold on
