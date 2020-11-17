@@ -12,15 +12,31 @@ addpath('..\Function');
 
 %% Global Variables
 % 图片地址
-IMG_FILE_NAME = '00.png';
-
-% 2/1.1/1.1.1/3/2.1/4/2/2/1/3.1
+IMG_FILE_NAME = '2.png';
 
 % 像素单位
 Unit_Pixel = 64;
 
 % 是否展示参考线
 isDisplay = false;
+%% 读取存储记录
+try
+    load nGCNNTrainData.mat
+catch ME
+    nGImgSet = [];
+    nGImgLabel = [];
+    lastSave = [];
+end
+% 当前保存信息
+currentSave = dir(IMG_FILE_NAME);
+
+if(~isempty(lastSave))
+    % 比较当前图片与最后一次保存图片信息对比
+    if(strcmp(lastSave.date, currentSave.date) && ...
+            lastSave.bytes == currentSave.bytes)
+       error('Error: 检测到重复存储行为。');
+    end
+end
 
 %% 图片切片
 [nGWidth,nGHeight,ImgSetPatchLine,ImgSetPatchRow] = ...
@@ -61,12 +77,6 @@ end
 fprintf('\t 成功读取Token字符串\n');
 
 %% 载入图片
-try
-    load nGCNNTrainData.mat
-catch ME
-    nGImgSet = [];
-    nGImgLabel = [];
-end
 % 原数据集个数
 dataSetNum = length(nGImgLabel);
 
@@ -80,6 +90,9 @@ nGImgLabel = cat(1, nGImgLabel, cell2mat(nGLenTokenLineT));
 for ii = 1:length(ImgSetPatchRow)
     nGImgSet = cat(3,nGImgSet,ImgSetPatchLine{ii});
 end
+
+% 存储信息
+lastSave = currentSave;
 
 fprintf('\t 成功添加当前图片\n');
 fprintf('\t 添加单元数目：%d\n',length(nGImgLabel) - dataSetNum);
@@ -96,5 +109,5 @@ for ii = 1:3
     title("序号:" + int2str(index) + "  标签:" + int2str(nGImgLabel(index)));
 end
 %% 保存
-% save nGCNNTrainData.mat nGImgSet nGImgLabel
+save nGCNNTrainData.mat nGImgSet nGImgLabel lastSave
 

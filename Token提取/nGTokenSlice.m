@@ -58,7 +58,14 @@ imageOrig = rgb2gray(imread(IMG_FILE_NAME));
 % % 利用统计信息去除周围黄色部分
 % [N,~] = histcounts(imageOrig,linspace(0,255,64));
 % imageBW = imageOrig < 4 * (find(diff(N) > 0,1,'first') + 1);
-imageBW = 1 - imbinarize(imageOrig, graythresh(imageOrig));
+try
+    imageBW = 1 - imbinarize(imageOrig, graythresh(imageOrig));
+catch ME
+    if(strcmp(ME.identifier, 'MATLAB:UndefinedFunction'))
+        warning('Warning: 缺少Image Processing Toolbox，替换计算方法。');
+        imageBW = imageOrig < 128;
+    end
+end
 
 
 %% 计算题面长宽
