@@ -29,7 +29,9 @@
 %   nGHeight            :高度(行个数)
 %   nGLenLine        	:每列token长度(向量长度nGWidth)
 %   nGLenRow            :每行token长度(向量长度nGHeight)
-%   ImgSet              :图片集合
+%   ImgSetPatchLine     :列token图片集合
+%   ImgSetPatchRow      :行token图片集合
+
 
 clear sumDivide
 %% Global Variables
@@ -42,6 +44,8 @@ Unit_Pixel = 64;
 
 % 是否展示参考线
 isDisplay = true;
+
+% 
 
 %% 读取照片
 % 修正为灰度图片(0为黑色，255为白色)
@@ -86,24 +90,49 @@ end
 
 %% 取单元图片切片
 % 列token，自上向下，自左向右处理
+ImgSetPatchLine = cell(length(LocsGridLineS) - 1,1);
 for ii = 1:length(LocsGridLineS) - 1
     for jj = 1:length(nGIntervalLine) - 1
+        % 切片
         imgSet = imageOrig(nGIntervalLine(jj):nGIntervalLine(jj+1),...
             LocsGridLineE(ii):LocsGridLineS(ii+1));
-        imshow(imgSet);
-        pause(0.01)
+        % 判断图片是否空
+        if(~isEmptyUnit(imgSet))
+            ImgSetPatchLine{ii} = cat(3, ImgSetPatchLine{ii},...
+                imresize(imgSet,[Unit_Pixel,Unit_Pixel]));
+            % imshow(imgSet);
+            % pause(0.4)
+        end
     end
 end
 % 行token，自左向右，自上向下处理
+ImgSetPatchRow = cell(length(LocsGridRowS) - 1,1);
 for ii = 1:length(LocsGridRowS) - 1
     for jj = 1:length(nGIntervalRow) - 1
+        % 切片
         imgSet = imageOrig(LocsGridRowE(ii):LocsGridRowS(ii+1),...
             nGIntervalRow(jj):nGIntervalRow(jj+1));
-        imshow(imgSet);
-        pause(0.01)
+        % 判断图片是否空
+        if(~isEmptyUnit(imgSet))
+            ImgSetPatchRow{ii} = cat(3, ImgSetPatchRow{ii},...
+                imresize(imgSet,[Unit_Pixel,Unit_Pixel]));
+            % imshow(imgSet);
+            % pause(0.4)
+        end
     end
 end
 
+%%
+function x = isEmptyUnit(imgInput)
+% 判断输入单元图片是否空
+
+% 截取中心方块
+imgInput = imgInput(round(end/5):round(3*end/4),...
+    round(end/4):round(3*end/4));
+
+x = mean(imgInput,'all') > 250;
+
+end
 
 %%
 function [nGWidth,LocsGridLineS,LocsGridLineE,nGIntervalRow] = ...
@@ -174,3 +203,4 @@ if(isDisplay)
         'Location','northeastoutside');
 end
 end
+
