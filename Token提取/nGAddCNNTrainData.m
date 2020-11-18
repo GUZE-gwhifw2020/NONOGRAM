@@ -12,7 +12,7 @@ addpath('..\Function');
 
 %% Global Variables
 % 图片地址
-IMG_FILE_NAME = '2.png';
+IMG_FILE_NAME = '0.png';
 
 % 像素单位
 Unit_Pixel = 64;
@@ -42,7 +42,7 @@ end
 [nGWidth,nGHeight,ImgSetPatchLine,ImgSetPatchRow] = ...
     nGTokenSlice(IMG_FILE_NAME, Unit_Pixel, isDisplay);
 
-fprintf('\t%s\n',repmat('=',40));
+fprintf('\t%s\n',repmat('=',[100 1]));
 fprintf('\t 成功读取图片%s\n', IMG_FILE_NAME);
 fprintf('\t 宽度(列数):%d\n\t 高度(行数):%d\n',nGWidth,nGHeight);
 
@@ -87,7 +87,7 @@ for ii = 1:length(ImgSetPatchRow)
 end
 % 行Token
 nGImgLabel = cat(1, nGImgLabel, cell2mat(nGLenTokenLineT));
-for ii = 1:length(ImgSetPatchRow)
+for ii = 1:length(ImgSetPatchLine)
     nGImgSet = cat(3,nGImgSet,ImgSetPatchLine{ii});
 end
 
