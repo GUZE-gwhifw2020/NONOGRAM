@@ -83,33 +83,43 @@ h1.Visible = 'off';
 subplot(2,1,1);
 [nGWidth,LocsGridLineS,LocsGridLineE,nGIntervalRow] = ...
     sliceLocate(sum(imageBW,1));
-if(mod(nGWidth,5) ~= 0)
-    warning('Warning: 宽度不是5的倍数，进行修正。');
-    
-    % 强制显示图片
-    isDisplay = true;
-    
-    % 对LocsGridLineS与LocsGridLineE修正
-    [nGWidth, LocsGridLineS, LocsGridLineE] = sliceLocateRevise(sum(imageBW,1),LocsGridLineS);
-end
 
 % 逐行求和，得出列token的分割线
 subplot(2,1,2);
 [nGHeight,LocsGridRowS,LocsGridRowE,nGIntervalLine] = ...
     sliceLocate(sum(imageBW,2));
-if(mod(nGHeight,5) ~= 0)
-    warning('Warning: 高度不是5的倍数，进行修正。');
-    
+
+% 标准差显示
+fprintf('\t行列间隔标准差: %3f,%3f\n',...
+    deviCal(LocsGridRowS,1.1),deviCal(LocsGridLineS,1.1));
+
+% 列向求和修正
+if(mod(nGWidth,5) ~= 0)
+    warning('Warning: 宽度不是5的倍数，进行修正。');
     % 强制显示图片
     isDisplay = true;
-    
+    % 对LocsGridLineS与LocsGridLineE修正
+    subplot(2,1,1);
+    [nGWidth, LocsGridLineS, LocsGridLineE] = sliceLocateRevise(sum(imageBW,1),LocsGridLineS);
+end
+
+% 行向求和修正
+if(mod(nGHeight,5) ~= 0)
+    warning('Warning: 高度不是5的倍数，进行修正。');
+    % 强制显示图片
+    isDisplay = true;
     % 对LocsGridRowS与LocsGridRowE修正
+    subplot(2,1,2);
     [nGHeight, LocsGridRowS, LocsGridRowE] = sliceLocateRevise(sum(imageBW,2),LocsGridRowS);
 end
 
 if(isDisplay)
     h1.Visible = 'on';
 end
+
+% 标准差显示
+fprintf('\t行列间隔标准差: %3f,%3f\n',...
+    deviCal(LocsGridRowS,1.1),deviCal(LocsGridLineS,1.1));
 
 if(mod(nGWidth,5)~=0 || mod(nGHeight,5)~=0)
     error('Error: 修正后行列宽度(%d, %d)依然不为5的倍数。', nGWidth, nGHeight);
@@ -265,4 +275,16 @@ scatter(LocsGridLineS, repmat(1.1 * max(imageSum), size(LocsGridLineS)),...
     'Marker','diamond','LineWidth',1,...
     'DisplayName','修正结果');
 
+end
+
+%%
+function d = deviCal(LocsGrid, bias)
+% 标准差显示
+if(nargin < 2)
+    bias = 1;
+end
+x = diff(LocsGrid);
+% 对间隔修正
+x(1:5:length(x)) = x(1:5:length(x)) / bias;
+d = std(x);
 end
