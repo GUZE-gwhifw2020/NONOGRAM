@@ -45,7 +45,7 @@ clear sumDivide
 % isDisplay = true;
 
 if(nargin < 3)
-    isDisplay = false;
+    isDisplay = true;
     if(nargin < 2)
         Unit_Pixel = 64;
     end
@@ -71,11 +71,29 @@ end
 %% 计算题面长宽
 % 逐列求和，得出行token的分割线
 [nGWidth,LocsGridLineS,LocsGridLineE,nGIntervalRow] = ...
-    sumDivide(sum(imageBW,1),isDisplay);
+    sliceLocate(sum(imageBW,1),isDisplay);
+
+if(mod(nGWidth,5) ~= 0)
+    warning('Warning: 宽度不是5的倍数，进行修正。');
+    % 对LocsGridLineS与LocsGridLineE修正
+    [nGWidth, LocsGridLineS, LocsGridLineE] = sliceLocateRevise(sum(imageBW,1),LocsGridLineS);
+    
+    if(mod(nGWidth,5) ~= 0)
+        error('Warning: 修正后宽度不是5的倍数。');
+    end
+end
 
 % 逐行求和，得出列token的分割线
 [nGHeight,LocsGridRowS,LocsGridRowE,nGIntervalLine] = ...
-    sumDivide(sum(imageBW,2),isDisplay);
+    sliceLocate(sum(imageBW,2),isDisplay);
+if(mod(nGHeight,5) ~= 0)
+    warning('Warning: 高度不是5的倍数，进行修正。');
+    % 对LocsGridLineS与LocsGridLineE修正
+    [nGHeight, LocsGridRowS, LocsGridRowE] = sliceLocateRevise(sum(imageBW,2),LocsGridRowS);
+    if(mod(nGHeight,5) ~= 0)
+        error('Warning: 修正后高度不是5的倍数。');
+    end
+end
 
 if(isDisplay)
     try
@@ -149,7 +167,7 @@ end
 
 %%
 function [nGWidth,LocsGridLineS,LocsGridLineE,nGIntervalRow] = ...
-    sumDivide(imgSumLine,isDisplay)
+    sliceLocate(imgSumLine,isDisplay)
 % 根据列求和信息，计算宽度、网格列位置（起始/终端）、行token分割线横线坐标
 
 if(nargin < 2)
@@ -165,9 +183,6 @@ LocsGridLineE = LocsGridLineS + round(Width) - 1;
 
 % 确定题面宽度
 nGWidth = length(LocsGridLineS) - 1;
-if(mod(nGWidth,5) ~= 0)
-    warning('Warning: 不是5的倍数');
-end
 
 % 获得平均周期门限
 xPeriod = mean(diff(LocsGridLineS) - Width(1:end-1));
@@ -217,3 +232,24 @@ if(isDisplay)
 end
 end
 
+%%
+function [nGWidth, LocsGridLineS,LocsGridLineE] = sliceLocateRevise(imageSum,LocsGridLineS)
+x = diff(LocsGridLineS);
+interval = mean(x(x < 2*min(x)));
+
+[~,LocsGridLineSV,WidthV] = findpeaks(imageSum);
+
+jj = 1;
+kIndex = false(length(LocsGridLineSV),1);
+for ii = 1:length(LocsGridLineSV)
+    if(LocsGridLineSV(ii) == LocsGridLineS(jj))
+        jj = jj + 1;
+        kIndex(ii) = true;
+    elseif(mod(abs(LocsGridLineSV(ii) - LocsGridLineS(jj))/interval,1) < 0.1)
+        kIndex(ii) = true;
+    end
+end
+LocsGridLineS = LocsGridLineSV(kIndex);
+LocsGridLineE = LocsGridLineSV(kIndex) + round(WidthV(kIndex));
+nGWidth = length(LocsGridLineS);
+end
