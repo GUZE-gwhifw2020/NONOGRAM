@@ -12,7 +12,7 @@ function [nGWidth,nGHeight,ImgSetPatchLine,ImgSetPatchRow] = ...
 
 %% Detailed Function
 % An example:
-%       1   
+%       1
 %       2   3
 %  4 5  #   #
 %  6 7  #   #
@@ -22,7 +22,7 @@ function [nGWidth,nGHeight,ImgSetPatchLine,ImgSetPatchRow] = ...
 %   The slice procedure will follow the same sequence.
 
 %   The procudure will produce two ImgSetCells (row and line respectively)
-%   Each cell element has the shape of 
+%   Each cell element has the shape of
 %       Unit_Pixel * Unit_Pixel * 1 * k
 %   k is the token number in corresponding row(line)
 
@@ -45,7 +45,7 @@ clear sumDivide
 % isDisplay = true;
 
 if(nargin < 3)
-    isDisplay = true;
+    isDisplay = false;
     if(nargin < 2)
         Unit_Pixel = 64;
     end
@@ -67,34 +67,55 @@ catch ME
     end
 end
 
+%% 分割坐标定位图片
+try
+    close('侧向求和分割结果');
+catch ME
+    if(~strcmp(ME.identifier, 'MATLAB:close:WindowNotFound'))
+        rethrow(ME);
+    end
+end
+h1 = figure('Name','侧向求和分割结果');
+h1.Visible = 'off';
 
 %% 计算题面长宽
 % 逐列求和，得出行token的分割线
+subplot(2,1,1);
 [nGWidth,LocsGridLineS,LocsGridLineE,nGIntervalRow] = ...
-    sliceLocate(sum(imageBW,1),isDisplay);
-
+    sliceLocate(sum(imageBW,1));
 if(mod(nGWidth,5) ~= 0)
     warning('Warning: 宽度不是5的倍数，进行修正。');
+    
+    % 强制显示图片
+    isDisplay = true;
+    
     % 对LocsGridLineS与LocsGridLineE修正
     [nGWidth, LocsGridLineS, LocsGridLineE] = sliceLocateRevise(sum(imageBW,1),LocsGridLineS);
-    
-    if(mod(nGWidth,5) ~= 0)
-        error('Warning: 修正后宽度不是5的倍数。');
-    end
 end
 
 % 逐行求和，得出列token的分割线
+subplot(2,1,2);
 [nGHeight,LocsGridRowS,LocsGridRowE,nGIntervalLine] = ...
-    sliceLocate(sum(imageBW,2),isDisplay);
+    sliceLocate(sum(imageBW,2));
 if(mod(nGHeight,5) ~= 0)
     warning('Warning: 高度不是5的倍数，进行修正。');
-    % 对LocsGridLineS与LocsGridLineE修正
+    
+    % 强制显示图片
+    isDisplay = true;
+    
+    % 对LocsGridRowS与LocsGridRowE修正
     [nGHeight, LocsGridRowS, LocsGridRowE] = sliceLocateRevise(sum(imageBW,2),LocsGridRowS);
-    if(mod(nGHeight,5) ~= 0)
-        error('Warning: 修正后高度不是5的倍数。');
-    end
 end
 
+if(isDisplay)
+    h1.Visible = 'on';
+end
+
+if(mod(nGWidth,5)~=0 || mod(nGHeight,5)~=0)
+    error('Error: 修正后行列宽度(%d, %d)依然不为5的倍数。', nGWidth, nGHeight);
+end
+
+%% 分割线图片
 if(isDisplay)
     try
         close('分割线演示');
@@ -167,16 +188,10 @@ end
 
 %%
 function [nGWidth,LocsGridLineS,LocsGridLineE,nGIntervalRow] = ...
-    sliceLocate(imgSumLine,isDisplay)
+    sliceLocate(imgSumLine)
 % 根据列求和信息，计算宽度、网格列位置（起始/终端）、行token分割线横线坐标
 
-if(nargin < 2)
-    isDisplay = false;
-end
-
-persistent isDualFigure
-
-% 第一次以0.9倍极大值为双肩门限确定网格位置(竖向网格)
+% 第一次以0.9倍极大值为高度门限确定网格位置(竖向网格)
 [~,LocsGridLineS,Width] = findpeaks(imgSumLine,...
     'MinPeakHeight',0.9 * max(imgSumLine));
 LocsGridLineE = LocsGridLineS + round(Width) - 1;
@@ -195,61 +210,59 @@ xPeriod = mean(diff(LocsGridLineS) - Width(1:end-1));
 nGIntervalRow = round(linspace(LocsInterval(1) + WIDTHS2(1),...
     LocsGridLineS(1) - 1, length(LocsInterval)));
 
-if(isDisplay)
-    if(isempty(isDualFigure))
-        try
-            close('侧向求和分割结果');
-        catch ME
-            if(~strcmp(ME.identifier, 'MATLAB:close:WindowNotFound'))
-                rethrow(ME);
-            end
-        end
-        figure('Name','侧向求和分割结果');
-        subplot(2,1,1)
-        isDualFigure = true;
-    else
-        isDualFigure = [];
-        subplot(2,1,2)
-    end
-    
-    % 侧向求和结果
-    plot(imgSumLine,'LineWidth',0.8);
-    hold on
-    box off
-    % 黑色条纹起点
-    scatter(LocsGridLineS,imgSumLine(LocsGridLineS),'r');
-    % 黑色条纹终点
-    scatter(LocsGridLineE,imgSumLine(LocsGridLineE),'b');
-    % token部分峰值点
-    scatter(LocsInterval,imgSumLine(LocsInterval),'g');
-    % token部分分割线
-    for ii = 1:length(nGIntervalRow)
-        xline(nGIntervalRow(ii),'Color','red','LineStyle','--')
-    end
-    % 图例
-    legend('求和结果','条纹起点','条纹终点','token峰值点','token分割线',...
-        'Location','northeastoutside');
+% 侧向求和结果
+plot(imgSumLine,'LineWidth',0.8);
+hold on
+box off
+% 黑色条纹起点
+scatter(LocsGridLineS,imgSumLine(LocsGridLineS),'r');
+% 黑色条纹终点
+scatter(LocsGridLineE,imgSumLine(LocsGridLineE),'b');
+% token部分峰值点
+scatter(LocsInterval,imgSumLine(LocsInterval),'g');
+% token部分分割线
+for ii = 1:length(nGIntervalRow)
+    xline(nGIntervalRow(ii),'Color','red','LineStyle','--')
 end
+% 图例
+legend('求和结果','条纹起点','条纹终点','token峰值点','token分割线',...
+    'Location','northeastoutside');
+
 end
 
 %%
 function [nGWidth, LocsGridLineS,LocsGridLineE] = sliceLocateRevise(imageSum,LocsGridLineS)
+% 根据原切分结果修正
+
+% 计算平均间隔
 x = diff(LocsGridLineS);
-interval = mean(x(x < 2*min(x)));
+interval = mean(x(x < 1.5 * min(x)));
 
-[~,LocsGridLineSV,WidthV] = findpeaks(imageSum);
+% 寻找所有的峰
+[~,SV,WidthV] = findpeaks(imageSum);
 
+% 寻找根据间隔均分的峰位置
 jj = 1;
-kIndex = false(length(LocsGridLineSV),1);
-for ii = 1:length(LocsGridLineSV)
-    if(LocsGridLineSV(ii) == LocsGridLineS(jj))
+kIndex = false(length(SV),1);
+for ii = find(SV >= LocsGridLineS(1),1,'first'):length(SV)
+    z = abs(SV(ii) - LocsGridLineS(jj)) / interval;
+    if(z == 0)
         jj = jj + 1;
         kIndex(ii) = true;
-    elseif(mod(abs(LocsGridLineSV(ii) - LocsGridLineS(jj))/interval,1) < 0.1)
+    elseif(abs(z - round(z)) < 0.1)
         kIndex(ii) = true;
     end
 end
-LocsGridLineS = LocsGridLineSV(kIndex);
-LocsGridLineE = LocsGridLineSV(kIndex) + round(WidthV(kIndex));
-nGWidth = length(LocsGridLineS);
+
+% 提取峰起始与结束位置
+LocsGridLineS = SV(kIndex);
+LocsGridLineE = SV(kIndex) + round(WidthV(kIndex));
+nGWidth = length(LocsGridLineS) - 1;
+
+% 图像中绘制
+scatter(LocsGridLineS, repmat(1.1 * max(imageSum), size(LocsGridLineS)),...
+    'CData',[0.4660 0.6740 0.1880],...
+    'Marker','diamond','LineWidth',1,...
+    'DisplayName','修正结果');
+
 end
