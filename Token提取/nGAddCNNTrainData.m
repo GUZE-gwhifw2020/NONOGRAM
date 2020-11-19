@@ -18,7 +18,7 @@ IMG_FILE_NAME = '0.png';
 Unit_Pixel = 64;
 
 % 是否展示参考线
-isDisplay = false;
+isDisplay = true;
 %% 读取存储记录
 try
     load nGCNNTrainData.mat
