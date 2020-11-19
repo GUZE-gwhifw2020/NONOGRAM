@@ -151,12 +151,13 @@ if(isDisplay)
 end
 %% 取单元图片切片
 % 列token，自上向下，自左向右处理
-ImgSetPatchLine = cell(length(LocsGridLineS) - 1,1);
-for ii = 1:length(LocsGridLineS) - 1
+ImgSetPatchLine = cell(nGWidth,1);
+for ii = 1:nGWidth
+    ySpan = LocsGridLineE(ii):LocsGridLineS(ii+1);
     for jj = 1:length(nGIntervalLine) - 1
+        xSpan = nGIntervalLine(jj):nGIntervalLine(jj+1);
         % 切片
-        imgSet = imageOrig(nGIntervalLine(jj):nGIntervalLine(jj+1),...
-            LocsGridLineE(ii):LocsGridLineS(ii+1));
+        imgSet = imageOrig(xSpan, ySpan);
         % 判断图片是否空
         if(~isEmptyUnit(imgSet))
             ImgSetPatchLine{ii} = cat(3, ImgSetPatchLine{ii},...
@@ -167,12 +168,13 @@ for ii = 1:length(LocsGridLineS) - 1
     end
 end
 % 行token，自左向右，自上向下处理
-ImgSetPatchRow = cell(length(LocsGridRowS) - 1,1);
-for ii = 1:length(LocsGridRowS) - 1
+ImgSetPatchRow = cell(nGHeight,1);
+for ii = 1:nGHeight
+    xSpan = LocsGridRowE(ii):LocsGridRowS(ii+1);
     for jj = 1:length(nGIntervalRow) - 1
+        ySpan = nGIntervalRow(jj):nGIntervalRow(jj+1);
         % 切片
-        imgSet = imageOrig(LocsGridRowE(ii):LocsGridRowS(ii+1),...
-            nGIntervalRow(jj):nGIntervalRow(jj+1));
+        imgSet = imageOrig(xSpan, ySpan);
         % 判断图片是否空
         if(~isEmptyUnit(imgSet))
             ImgSetPatchRow{ii} = cat(3, ImgSetPatchRow{ii},...
@@ -188,9 +190,12 @@ end
 function x = isEmptyUnit(imgInput)
 % 判断输入单元图片是否空
 
+% 截取部分
+p = 0.6;
+
 % 截取中心方块
-imgInput = imgInput(round(end/5):round(3*end/4),...
-    round(end/4):round(3*end/4));
+imgInput = imgInput(round(end*(1-p)/2):round(end*(1+p)/2),...
+    round(end*(1-p)/2):round(end*(1+p)/2));
 
 x = mean(imgInput,'all') > 250;
 
