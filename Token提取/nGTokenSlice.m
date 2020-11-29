@@ -90,7 +90,7 @@ subplot(2,1,2);
     sliceLocate(sum(imageBW,2));
 
 % 标准差显示
-fprintf('\t行列间隔标准差: %3f,%3f\n',...
+fprintf('\t 行列间隔标准差: %3f,%3f\n',...
     deviCal(LocsGridRowS,1.1),deviCal(LocsGridLineS,1.1));
 
 % 列向求和修正
@@ -118,7 +118,7 @@ if(isDisplay)
 end
 
 % 标准差显示
-fprintf('\t行列间隔标准差: %3f,%3f\n',...
+fprintf('\t 行列间隔标准差: %3f,%3f\n',...
     deviCal(LocsGridRowS,1.1),deviCal(LocsGridLineS,1.1));
 
 if(mod(nGWidth,5)~=0 || mod(nGHeight,5)~=0)
@@ -218,11 +218,11 @@ nGWidth = length(LocsGridLineS) - 1;
 xPeriod = mean(diff(LocsGridLineS) - Width(1:end-1));
 
 % 第二次对前半部分求峰值，峰位置间隔不小于0.5倍平均周期门限
-[~,LocsInterval,WIDTHS2] = findpeaks(imgSumLine(1:LocsGridLineS(1)),...
+[~,LocsInterval,Width2] = findpeaks(imgSumLine(1:LocsGridLineS(1)),...
     'MinPeakDistance',0.5 * xPeriod);
 
 % 行token竖向分割线间隔
-nGIntervalRow = round(linspace(LocsInterval(1) + WIDTHS2(1),...
+nGIntervalRow = round(linspace(LocsInterval(1) + Width2(1),...
     LocsGridLineS(1) - 1, length(LocsInterval)));
 
 % 侧向求和结果

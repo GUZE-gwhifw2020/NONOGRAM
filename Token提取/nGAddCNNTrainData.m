@@ -18,11 +18,15 @@ IMG_FILE_NAME = '0.png';
 Unit_Pixel = 64;
 
 % 是否展示参考线
-isDisplay = true;
+isDisplay = false;
+
+% 起始线
+fprintf('\t%s\n',repmat('=',[40 1]));
+
 %% 读取存储记录
-try
+if(exist('nGCNNTrainData.mat','file'))
     load nGCNNTrainData.mat
-catch ME
+else
     nGImgSet = [];
     nGImgLabel = [];
     lastSave = [];
@@ -42,12 +46,11 @@ end
 [nGWidth,nGHeight,ImgSetPatchLine,ImgSetPatchRow] = ...
     nGTokenSlice(IMG_FILE_NAME, Unit_Pixel, isDisplay);
 
-fprintf('\t%s\n',repmat('=',[100 1]));
 fprintf('\t 成功读取图片%s\n', IMG_FILE_NAME);
 fprintf('\t 宽度(列数):%d\n\t 高度(行数):%d\n',nGWidth,nGHeight);
 
 %% 读取Token字符串并进行比较
-tokenStr = input('     输入Nonogram的Token：','s');
+tokenStr = input('     输入Nonogram的Token:','s');
 % 解析Token字符串
 [nGWidthT,nGHeightT,nGLenTokenLineT,nGLenTokenRowT,~,~,~,~] = nGTokenResolve(tokenStr);
 
@@ -74,8 +77,6 @@ if(~isequal(tokenNum,tokenNumT))
     error('Error：行Token信息图片与字符Token读取结果不对应。');
 end
 
-fprintf('\t 成功读取Token字符串\n');
-
 %% 载入图片
 % 原数据集个数
 dataSetNum = length(nGImgLabel);
@@ -91,13 +92,13 @@ for ii = 1:length(ImgSetPatchLine)
     nGImgSet = cat(3,nGImgSet,ImgSetPatchLine{ii});
 end
 
-% 存储信息
+% 存储文件信息
 lastSave = currentSave;
 
-fprintf('\t 成功添加当前图片\n');
 fprintf('\t 添加单元数目：%d\n',length(nGImgLabel) - dataSetNum);
 fprintf('\t 总单元数目：%d\n', length(nGImgLabel));
 %% 随机显示
+figure("Name", "样本随机显示")
 for ii = 1:3
     subplot(2,3,ii)
     index = randi([max(dataSetNum,1) length(nGImgLabel)]);
@@ -111,3 +112,5 @@ end
 %% 保存
 save nGCNNTrainData.mat nGImgSet nGImgLabel lastSave
 
+% 结束线
+fprintf('\t%s\n',repmat('=',[40 1]));
