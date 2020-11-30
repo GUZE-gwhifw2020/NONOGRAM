@@ -19,12 +19,11 @@ strToken = strcat(...
     "2/3.1.1.3/2.2.1.6/1.10.3.1/1.4.5.6/1.6.1.1.3.1/7.1.2/8.1.1"...
     );
 
-strToken = '1/1/4/3/1.3/1/1/1.3/4/3';
+strToken = '5/5/6.1/3.1.1/2.1.1/2.3/4/4/4/2.5/6.1/6.1/4/3/3/3.1/4/5/5/8';
+
 %%
 addpath('Function')
-
 X = NonoGram(strToken);
 %%
 X = X.Genesis();
-X.startTokRow
 X.Display();

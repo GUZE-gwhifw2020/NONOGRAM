@@ -44,6 +44,7 @@ for indexsPairNew = 1:pairsNum
         % 多个token点，取最大最小值
         minmaxLength = minmax(token(potentialTokenIndex));
         if(minmaxLength(1) < inBlcIndex(2) - inBlcIndex(1) + 1)
+            warning('Warning:可能错误')
            continue 
         end
         % blackPairs 确立起始位置
