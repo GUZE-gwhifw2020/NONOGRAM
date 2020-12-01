@@ -87,17 +87,31 @@ classdef NonoGram
             
             for iter = 1:25
                 % 2 - 根据更新起点逻辑矩阵确定新加入的B/W
-                for ii = 1:obj.nGWidthLine
-                    obj = obj.refreshLine(ii);
-                end
-				
-                for ii = 1:obj.nGHeightRow
-                    obj = obj.refreshRow(ii);
+                if(mod(iter,5) == 0)
+                    for ii = 1:obj.nGWidthLine
+                        obj.newBlcLine{ii} = find(obj.nGMatrix(:,ii) == obj.uTypeBlack);
+                        obj.newWhtLine{ii} = find(obj.nGMatrix(:,ii) == obj.uTypeWhite);
+                    end
+                    for ii = 1:obj.nGHeightRow
+                        obj.newBlcRow{ii} = find(obj.nGMatrix(ii,:) == obj.uTypeBlack);
+                        obj.newWhtRow{ii} = find(obj.nGMatrix(ii,:) == obj.uTypeWhite);
+                    end
+                    
+                else
+                    for ii = 1:obj.nGWidthLine
+                        obj = obj.refreshLine(ii);
+                    end
+                    
+                    for ii = 1:obj.nGHeightRow
+                        obj = obj.refreshRow(ii);
+                    end
                 end
                 % 临时矩阵传入结果矩阵
                 % obj.nGMatrix = obj.nGMatrixTemp;
                 
                 % 3 - 根据新加入的B/W改写起点逻辑矩阵
+				
+				
                 for ii = 1:obj.nGWidthLine
                     obj = obj.addWhiteLine(ii);
                     obj = obj.addBlackLine(ii);
@@ -106,6 +120,8 @@ classdef NonoGram
                     obj = obj.addWhiteRow(ii);
                     obj = obj.addBlackRow(ii);
                 end
+                
+                
                 % obj.nGMatrix
             end
         end
@@ -277,7 +293,7 @@ classdef NonoGram
                     span = max(1, pairs(ii,2) - obj.tokLine{index}(jj)) : pairs(ii,1);
                     if(any(obj.startTokLine{index}(span, jj)))
                         % 确认可能
-                        pTokId = cat(1, pTokId, jj);
+                        pTokId(end+1) = jj;
                     end
                 end
                 
@@ -313,7 +329,7 @@ classdef NonoGram
                     indexsRow = obj.nGMatrix(:,index) == obj.uTypeUnN;
                     for jj = pairs(ii,1) - leftAdd:pairs(ii,2) + rightAdd
                         if(indexsRow(jj) == true)
-                            obj.newBlcRow{jj} = cat(1, obj.newBlcRow{jj}, index);
+							obj.newBlcRow{jj}(end+1) = index;
                         end
                     end
                     % 特别的，如果最大最小相同，且连续块长度即为此值，新增白色
@@ -370,7 +386,7 @@ classdef NonoGram
                     span = max(1, pairs(ii,2) - obj.tokRow{index}(jj)) : pairs(ii,1);
                     if(any(obj.startTokRow{index}(span, jj)))
                         % 确认可能
-                        pTokId = cat(1, pTokId, jj);
+						pTokId(end+1) = jj;
                     end
                 end
                 
@@ -407,7 +423,7 @@ classdef NonoGram
                     indexsLine = obj.nGMatrix(index,:) == obj.uTypeUnN;
                     for jj = pairs(ii,1) - leftAdd:pairs(ii,2) + rightAdd
                         if(indexsLine(jj) == true)
-                            obj.newBlcLine{jj} = cat(1, obj.newBlcLine{jj}, index);
+                            obj.newBlcLine{jj}(end+1) = index;
                         end
                     end
                     % 特别的，如果最大最小相同，且连续块长度即为此值，新增白色
