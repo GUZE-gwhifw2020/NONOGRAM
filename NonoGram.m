@@ -119,7 +119,7 @@ classdef NonoGram
             
             % 对每一个添加的点(行数indexRow)处理
             for kk = 1:length(obj.newWhtLine{index})
-                for ii = length(obj.tokLine{index}):-1:1
+                for ii = obj.tokLenLine(index):-1:1
                     indexRow = obj.newWhtLine{index}(kk);
                     % 每一个token元素在加入白色点前token个方格置false
                     obj.startTokLine{index}(max(1, indexRow - obj.tokLine{index}(ii) + 1):indexRow, ii) = false;
@@ -127,12 +127,12 @@ classdef NonoGram
             end
             
             % 间隔式收缩
-            for ii = length(obj.tokLine{index})-1:-1:1
+            for ii = obj.tokLenLine(index)-1:-1:1
                 tIndex = find(obj.startTokLine{index}(:,ii+1),1,'last') - obj.tokLine{index}(ii);
                 obj.startTokLine{index}(tIndex:end,ii) = false;
             end
             
-            for ii = 1:length(obj.tokLine{index}) - 1
+            for ii = 1:obj.tokLenLine(index) - 1
                 sIndex = find(obj.startTokLine{index}(:,ii),1,'first') + obj.tokLine{index}(ii);
                 obj.startTokLine{index}(1:sIndex,ii+1) = false;
             end
@@ -150,7 +150,7 @@ classdef NonoGram
             
             % 对每一个添加的点(列数indexLine)处理
             for kk = 1:length(obj.newWhtRow{index})
-                for ii = length(obj.tokRow{index}):-1:1
+                for ii = obj.tokLenRow(index):-1:1
                     indexLine = obj.newWhtRow{index}(kk);
                     % 每一个token元素在加入白色点前token个方格置false
                     obj.startTokRow{index}(max(1, indexLine - obj.tokRow{index}(ii) + 1):indexLine, ii) = false;
@@ -159,12 +159,12 @@ classdef NonoGram
             end
             
             % 间隔式收缩
-            for ii = length(obj.tokRow{index})-1:-1:1
+            for ii = obj.tokLenRow(index)-1:-1:1
                 tIndex = find(obj.startTokRow{index}(:,ii+1),1,'last') - obj.tokRow{index}(ii);
                 obj.startTokRow{index}(tIndex:end,ii) = false;
             end
             
-            for ii = 1:length(obj.tokRow{index}) - 1
+            for ii = 1:obj.tokLenRow(index) - 1
                 sIndex = find(obj.startTokRow{index}(:,ii),1,'first') + obj.tokRow{index}(ii);
                 obj.startTokRow{index}(1:sIndex,ii+1) = false;
             end
@@ -181,7 +181,7 @@ classdef NonoGram
             % 白色部分: 所有Token元素延申均不重叠区域
             blackIndexs = false(obj.nGHeightRow,1);
             whiteIndexs = true(obj.nGHeightRow,1);
-            for ii = 1:length(obj.tokLine{index})
+            for ii = 1:obj.tokLenLine(index)
                 % 利用卷积确定延申部分(默认full,仅取前nGHeight个)
                 C = conv(obj.startTokLine{index}(:,ii), true(obj.tokLine{index}(ii),1));
                 
@@ -220,7 +220,7 @@ classdef NonoGram
             %       index      行序号
             blackIndexs = false(obj.nGWidthLine,1);
             whiteIndexs = true(obj.nGWidthLine,1);
-            for ii = 1:length(obj.tokRow{index})
+            for ii = 1:obj.tokLenRow(index)
                 % 利用卷积确定延申部分(默认full,仅取前nGHeight个)
                 C = conv(obj.startTokRow{index}(:,ii), true(obj.tokRow{index}(ii),1));
                 
@@ -298,6 +298,9 @@ classdef NonoGram
                     
                     if(NM(1) < pairs(ii,2) - pairs(ii,1) + 1)
                         warning('Warning:可能错误')
+                        disp(NM);
+                        disp(pairs(ii,:))
+                        disp(index)
                         continue
                     end
                     
@@ -329,12 +332,12 @@ classdef NonoGram
             end
             
             % 间隔式收缩
-            for ii = length(obj.tokLine{index}) - 1:-1:1
+            for ii = obj.tokLenLine(index) - 1:-1:1
                 tIndex = find(obj.startTokLine{index}(:,ii+1),1,'last') - obj.tokLine{index}(ii);
                 obj.startTokLine{index}(tIndex:end,ii) = false;
             end
             
-            for ii = 1:length(obj.tokLine{index}) - 1
+            for ii = 1:obj.tokLenLine(index) - 1
                 sIndex = find(obj.startTokLine{index}(:,ii),1,'first') + obj.tokLine{index}(ii);
                 obj.startTokLine{index}(1:sIndex,ii+1) = false;
             end
@@ -388,6 +391,9 @@ classdef NonoGram
                     
                     if(NM(1) < pairs(ii,2) - pairs(ii,1) + 1)
                         warning('Warning:可能错误')
+                        disp(NM);
+                        disp(pairs(ii,:))
+                        disp(index)
                         continue
                     end
                     
@@ -420,12 +426,12 @@ classdef NonoGram
             end
             
             % 间隔式收缩
-            for ii = length(obj.tokRow{index})-1:-1:1
+            for ii = obj.tokLenRow(index)-1:-1:1
                 tIndex = find(obj.startTokRow{index}(:,ii+1),1,'last') - obj.tokRow{index}(ii);
                 obj.startTokRow{index}(tIndex:end,ii) = false;
             end
             
-            for ii = 1:length(obj.tokRow{index}) - 1
+            for ii = 1:obj.tokLenRow(index) - 1
                 sIndex = find(obj.startTokRow{index}(:,ii),1,'first') + obj.tokRow{index}(ii);
                 obj.startTokRow{index}(1:sIndex,ii+1) = false;
             end
