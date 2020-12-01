@@ -85,11 +85,12 @@ classdef NonoGram
                 obj.startTokRow{ii} = InitStartPosTok(obj.nGWidthLine,obj.tokRow{ii});
             end
             
-            for iter = 1:5
+            for iter = 1:25
                 % 2 - 根据更新起点逻辑矩阵确定新加入的B/W
                 for ii = 1:obj.nGWidthLine
                     obj = obj.refreshLine(ii);
                 end
+				
                 for ii = 1:obj.nGHeightRow
                     obj = obj.refreshRow(ii);
                 end
@@ -105,7 +106,7 @@ classdef NonoGram
                     obj = obj.addWhiteRow(ii);
                     obj = obj.addBlackRow(ii);
                 end
-                obj.nGMatrix
+                % obj.nGMatrix
             end
         end
         
@@ -121,7 +122,7 @@ classdef NonoGram
                 for ii = length(obj.tokLine{index}):-1:1
                     indexRow = obj.newWhtLine{index}(kk);
                     % 每一个token元素在加入白色点前token个方格置false
-                    obj.startTokLine{index}(max(1, indexRow - obj.tokLine{index}(ii) + 1), ii) = false;
+                    obj.startTokLine{index}(max(1, indexRow - obj.tokLine{index}(ii) + 1):indexRow, ii) = false;
                 end
             end
             
@@ -152,7 +153,7 @@ classdef NonoGram
                 for ii = length(obj.tokRow{index}):-1:1
                     indexLine = obj.newWhtRow{index}(kk);
                     % 每一个token元素在加入白色点前token个方格置false
-                    obj.startTokRow{index}(max(1, indexLine - obj.tokRow{index}(ii) + 1), ii) = false;
+                    obj.startTokRow{index}(max(1, indexLine - obj.tokRow{index}(ii) + 1):indexLine, ii) = false;
                 end
                 
             end
@@ -176,7 +177,6 @@ classdef NonoGram
             %REFRESHLINE 更新第index列
             % 输入参数
             %       index      列序号
-            
             % 黑色部分: 任一个Token元素延申重叠区域
             % 白色部分: 所有Token元素延申均不重叠区域
             blackIndexs = false(obj.nGHeightRow,1);
@@ -210,6 +210,7 @@ classdef NonoGram
             for ii = 1:length(indexsWhtRow)
                 obj.newWhtRow{indexsWhtRow(ii)}(end+1) = index;
             end
+           
             
         end
         
@@ -309,14 +310,14 @@ classdef NonoGram
                     indexsRow = obj.nGMatrix(:,index) == obj.uTypeUnN;
                     for jj = pairs(ii,1) - leftAdd:pairs(ii,2) + rightAdd
                         if(indexsRow(jj) == true)
-                            obj.newBlcRow{indexsRow(jj)} = cat(1, obj.newBlcRow{indexsRow(jj)}, index);
+                            obj.newBlcRow{jj} = cat(1, obj.newBlcRow{jj}, index);
                         end
                     end
                     % 特别的，如果最大最小相同，且连续块长度即为此值，新增白色
                     if(NM(1) == NM(2) && NM(1) == pairs(ii,2) - pairs(ii,1) + 1)
                         if(pairs(ii,1) ~= 1)
                             obj.newWhtLine{index}(end+1) = pairs(ii,1) - 1;
-                            obj.newWhtRow{pairs(ii,1)-1}(end+1) = pairs(ii,1) - 1;
+                            obj.newWhtRow{pairs(ii,1)-1}(end+1) = index;
                         end
                         if(pairs(ii,2) ~= obj.nGHeightRow)
                             obj.newWhtLine{index}(end+1) = pairs(ii,2) + 1;
@@ -400,7 +401,7 @@ classdef NonoGram
                     indexsLine = obj.nGMatrix(index,:) == obj.uTypeUnN;
                     for jj = pairs(ii,1) - leftAdd:pairs(ii,2) + rightAdd
                         if(indexsLine(jj) == true)
-                            obj.newBlcLine{indexsLine(jj)} = cat(1, obj.newBlcLine{indexsLine(jj)}, index);
+                            obj.newBlcLine{jj} = cat(1, obj.newBlcLine{jj}, index);
                         end
                     end
                     % 特别的，如果最大最小相同，且连续块长度即为此值，新增白色
