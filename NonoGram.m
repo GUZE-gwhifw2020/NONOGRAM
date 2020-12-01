@@ -85,7 +85,7 @@ classdef NonoGram
                 obj.startTokRow{ii} = InitStartPosTok(obj.nGWidthLine,obj.tokRow{ii});
             end
             
-            for iter = 1:25
+            for iter = 1:55
                 % 2 - 根据更新起点逻辑矩阵确定新加入的B/W
                 if(mod(iter,5) == 0)
                     for ii = 1:obj.nGWidthLine
@@ -106,21 +106,20 @@ classdef NonoGram
                         obj = obj.refreshRow(ii);
                     end
                 end
-                % 临时矩阵传入结果矩阵
-                % obj.nGMatrix = obj.nGMatrixTemp;
                 
                 % 3 - 根据新加入的B/W改写起点逻辑矩阵
-				
-				
                 for ii = 1:obj.nGWidthLine
                     obj = obj.addWhiteLine(ii);
-                    obj = obj.addBlackLine(ii);
                 end
                 for ii = 1:obj.nGHeightRow
                     obj = obj.addWhiteRow(ii);
+                end
+                for ii = 1:obj.nGWidthLine
+                    obj = obj.addBlackLine(ii);
+                end
+                for ii = 1:obj.nGHeightRow
                     obj = obj.addBlackRow(ii);
                 end
-                
                 
                 % obj.nGMatrix
             end
@@ -226,7 +225,7 @@ classdef NonoGram
             for ii = 1:length(indexsWhtRow)
                 obj.newWhtRow{indexsWhtRow(ii)}(end+1) = index;
             end
-           
+            
             
         end
         
@@ -290,12 +289,14 @@ classdef NonoGram
                 pTokId = [];
                 for jj = 1:obj.tokLenLine(index)
                     % pairs(ii,2)前tokLen至pairs(ii,1)范围是否有一个true
-                    span = max(1, pairs(ii,2) - obj.tokLine{index}(jj)) : pairs(ii,1);
+                    span = max(1, pairs(ii,2) - obj.tokLine{index}(jj) + 1) : pairs(ii,1);
                     if(any(obj.startTokLine{index}(span, jj)))
                         % 确认可能
                         pTokId(end+1) = jj;
                     end
                 end
+                
+                NM = minmax(obj.tokLine{index}(pTokId)');
                 
                 % 对pTokId个数判断
                 if(isempty(pTokId))
@@ -306,12 +307,10 @@ classdef NonoGram
                     x = false(obj.nGHeightRow, 1);
                     x(span) = true;
                     obj.startTokLine{index}(:, pTokId) = obj.startTokLine{index}(:, pTokId) & x;
-                else
+                    
                     % 多个元素
                     % 可能token值最大最小值
-                    
-                    NM = minmax(obj.tokLine{index}(pTokId)');
-                    
+                else
                     if(NM(1) < pairs(ii,2) - pairs(ii,1) + 1)
                         warning('Warning:可能错误')
                         disp(NM);
@@ -324,26 +323,26 @@ classdef NonoGram
                     leftAdd = find(obj.nGMatrix(pairs(ii,1)+NM(1)-1:-1:pairs(ii,2), index) == -1 ,1,'first');
                     rightAdd = find(obj.nGMatrix(pairs(ii,2)-NM(1)+1:pairs(ii,1), index) == -1 ,1,'first');
                     
+                    
                     % 新增黑色
                     % obj.nGMatrix(pairs(ii,1) - leftAdd:pairs(ii,2)+rightAdd,index) = 1;
                     indexsRow = obj.nGMatrix(:,index) == obj.uTypeUnN;
                     for jj = pairs(ii,1) - leftAdd:pairs(ii,2) + rightAdd
                         if(indexsRow(jj) == true)
-							obj.newBlcRow{jj}(end+1) = index;
+                            obj.newBlcRow{jj}(end+1) = index;
                         end
                     end
-                    % 特别的，如果最大最小相同，且连续块长度即为此值，新增白色
-                    if(NM(1) == NM(2) && NM(1) == pairs(ii,2) - pairs(ii,1) + 1)
-                        if(pairs(ii,1) ~= 1)
-                            obj.newWhtLine{index}(end+1) = pairs(ii,1) - 1;
-                            obj.newWhtRow{pairs(ii,1)-1}(end+1) = index;
-                        end
-                        if(pairs(ii,2) ~= obj.nGHeightRow)
-                            obj.newWhtLine{index}(end+1) = pairs(ii,2) + 1;
-                            obj.newWhtRow{pairs(ii,2)+1}(end+1) = index;
-                        end
+                end
+                % 特别的，如果最大最小相同，且连续块长度即为此值，新增白色
+                if(NM(1) == NM(2) && NM(1) == pairs(ii,2) - pairs(ii,1) + 1)
+                    if(pairs(ii,1) ~= 1)
+                        obj.newWhtLine{index}(end+1) = pairs(ii,1) - 1;
+                        obj.newWhtRow{pairs(ii,1)-1}(end+1) = index;
                     end
-                        
+                    if(pairs(ii,2) ~= obj.nGHeightRow)
+                        obj.newWhtLine{index}(end+1) = pairs(ii,2) + 1;
+                        obj.newWhtRow{pairs(ii,2)+1}(end+1) = index;
+                    end
                 end
             end
             
@@ -383,12 +382,14 @@ classdef NonoGram
                 pTokId = [];
                 for jj = 1:obj.tokLenRow(index)
                     % pairs(ii,2)前tokLen至pairs(ii,1)范围是否有一个true
-                    span = max(1, pairs(ii,2) - obj.tokRow{index}(jj)) : pairs(ii,1);
+                    span = max(1, pairs(ii,2) - obj.tokRow{index}(jj) + 1) : pairs(ii,1);
                     if(any(obj.startTokRow{index}(span, jj)))
                         % 确认可能
-						pTokId(end+1) = jj;
+                        pTokId(end+1) = jj;
                     end
                 end
+                
+                NM = minmax(obj.tokRow{index}(pTokId)');
                 
                 % 对pTokId个数判断
                 if(isempty(pTokId))
@@ -402,9 +403,6 @@ classdef NonoGram
                 else
                     % 多个元素
                     % 可能token值最大最小值
-                    
-                    NM = minmax(obj.tokRow{index}(pTokId)');
-                    
                     if(NM(1) < pairs(ii,2) - pairs(ii,1) + 1)
                         warning('Warning:可能错误')
                         disp(NM);
@@ -426,18 +424,17 @@ classdef NonoGram
                             obj.newBlcLine{jj}(end+1) = index;
                         end
                     end
-                    % 特别的，如果最大最小相同，且连续块长度即为此值，新增白色
-                    if(NM(1) == NM(2) && NM(1) == pairs(ii,2) - pairs(ii,1) + 1)
-                        if(pairs(ii,1) ~= 1)
-                            obj.newWhtRow{index}(end+1) = pairs(ii,1) - 1;
-                            obj.newWhtLine{pairs(ii,1)-1}(end+1) = index;
-                        end
-                        if(pairs(ii,2) ~= obj.nGWidthLine)
-                            obj.newWhtRow{index}(end+1) = pairs(ii,2) + 1;
-                            obj.newWhtLine{pairs(ii,2)+1}(end+1) = index;
-                        end
+                end
+                % 特别的，如果最大最小相同，且连续块长度即为此值，新增白色
+                if(NM(1) == NM(2) && NM(1) == pairs(ii,2) - pairs(ii,1) + 1)
+                    if(pairs(ii,1) ~= 1)
+                        obj.newWhtRow{index}(end+1) = pairs(ii,1) - 1;
+                        obj.newWhtLine{pairs(ii,1)-1}(end+1) = index;
                     end
-                        
+                    if(pairs(ii,2) ~= obj.nGWidthLine)
+                        obj.newWhtRow{index}(end+1) = pairs(ii,2) + 1;
+                        obj.newWhtLine{pairs(ii,2)+1}(end+1) = index;
+                    end
                 end
             end
             
@@ -480,11 +477,11 @@ classdef NonoGram
     end
 end
 
-function pairs = pairsNewSeek(a, indexs)
-%PAIRNEWSEEK 计算新加入下标序列indexs后，变化的连续对
+function pairs = pairsNewSeek(a, add)
+%PAIRNEWSEEK 计算新加入下标序列add后，变化的连续对
 %   输入参数
 %       a           原序列
-%       indexs      新增黑色下标
+%       add         新增黑色下标
 
 % =/ 定义 /= 连续段的起始终点位置
 % a = [1 0 0 1 0 1 1];
@@ -492,9 +489,9 @@ function pairs = pairsNewSeek(a, indexs)
 % e = [1 4 7];
 
 % 新加入位置设置为1
-indexs = unique(indexs);
+add = unique(add);
 a(a == -1) = 0;
-a(indexs) = 1;
+a(add) = 1;
 
 % 更新序列连续段起始终点位置
 aD = diff([0; a(:); 0]);
@@ -502,22 +499,24 @@ s = find(aD == 1);
 e = find(aD == -1) - 1;
 
 % 段序列下标
-eIndex = 1;
-
+eId = 1;
 pairs = [];
-for ii = 1:length(indexs)
-    % 所处连续块起始位置
-    if(e(eIndex) >= indexs(ii))
-        pairs = cat(1,pairs, [s(eIndex) e(eIndex)]);
-        if(eIndex == length(e))
+
+for aId = 1:length(add)
+    while(e(eId) < add(aId))
+        eId = eId + 1;
+        if(eId > length(e))
             break
         end
-        eIndex = eIndex + 1;
-        % 段序列下标终点后移到indexs(ii)后
-        while(e(eIndex) <= indexs(ii))
-            eIndex = eIndex + 1;
-        end
     end
+    if(s(eId) > add(aId))
+        continue
+    end
+    pairs = cat(1,pairs, [s(eId) e(eId)]);
+    if(eId == length(e))
+        break
+    end
+    eId = eId + 1;
 end
 
 end
