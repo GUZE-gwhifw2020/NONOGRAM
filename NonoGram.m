@@ -85,7 +85,7 @@ classdef NonoGram
                 obj.startTokRow{ii} = InitStartPosTok(obj.nGWidthLine,obj.tokRow{ii});
             end
             
-            for iter = 1:55
+            for iter = 1:100
                 % 2 - 根据更新起点逻辑矩阵确定新加入的B/W
                 if(mod(iter,5) == 0)
                     for ii = 1:obj.nGWidthLine
@@ -99,26 +99,38 @@ classdef NonoGram
                     
                 else
                     for ii = 1:obj.nGWidthLine
-                        obj = obj.refreshLine(ii);
+                        if(obj.isFinLine(ii) == false)
+                            obj = obj.refreshLine(ii);
+                        end
                     end
                     
                     for ii = 1:obj.nGHeightRow
-                        obj = obj.refreshRow(ii);
+                        if(obj.isFinRow(ii) == false)
+                            obj = obj.refreshRow(ii);
+                        end
                     end
                 end
                 
                 % 3 - 根据新加入的B/W改写起点逻辑矩阵
                 for ii = 1:obj.nGWidthLine
-                    obj = obj.addWhiteLine(ii);
+                    if(obj.isFinLine(ii) == false)
+                        obj = obj.addWhiteLine(ii);
+                    end
                 end
                 for ii = 1:obj.nGHeightRow
-                    obj = obj.addWhiteRow(ii);
+                    if(obj.isFinRow(ii) == false)
+                        obj = obj.addWhiteRow(ii);
+                    end
                 end
                 for ii = 1:obj.nGWidthLine
-                    obj = obj.addBlackLine(ii);
+                    if(obj.isFinLine(ii) == false)
+                        obj = obj.addBlackLine(ii);
+                    end
                 end
                 for ii = 1:obj.nGHeightRow
-                    obj = obj.addBlackRow(ii);
+                    if(obj.isFinRow(ii) == false)
+                        obj = obj.addBlackRow(ii);
+                    end
                 end
                 
                 % obj.nGMatrix
@@ -216,9 +228,15 @@ classdef NonoGram
                 error('Error: 检测到在黑色位置写入白色');
             end
             
+            % 判断是否完成
+            unnIndexs = obj.nGMatrix(:,index) == obj.uTypeUnN;
+            if(all(~unnIndexs))
+                obj.isFinLine(index) = true;
+            end
+            
             % 多个行新增一个元素：列位置index
-            indexsBlcRow = find(blackIndexs & obj.nGMatrix(:,index) == obj.uTypeUnN);
-            indexsWhtRow = find(whiteIndexs & obj.nGMatrix(:,index) == obj.uTypeUnN);
+            indexsBlcRow = find(blackIndexs & unnIndexs);
+            indexsWhtRow = find(whiteIndexs & unnIndexs);
             for ii = 1:length(indexsBlcRow)
                 obj.newBlcRow{indexsBlcRow(ii)}(end+1) = index;
             end
@@ -255,6 +273,12 @@ classdef NonoGram
                 error('Error: 检测到在黑色位置写入白色');
             end
             
+            % 判断是否完成
+            unnIndexs = obj.nGMatrix(index,:)' == obj.uTypeUnN;
+            if(all(~unnIndexs))
+                obj.isFinRow(index) = true;
+            end
+            
             % 列新增位置(B/W下标是列向量，原始矩阵需要转置)
             indexsBlcLine = find(blackIndexs & obj.nGMatrix(index,:)' == obj.uTypeUnN);
             indexsWhtLine = find(whiteIndexs & obj.nGMatrix(index,:)' == obj.uTypeUnN);
@@ -282,7 +306,6 @@ classdef NonoGram
             % 赋值
             obj.nGMatrix(obj.newBlcLine{index}, index) = obj.uTypeBlack;
             
-            
             % 每一个连续对范围pairs(ii,1)~pairs(ii,2)
             for ii = 1:size(pairs,1)
                 % 可能属于哪一(几)个token元素
@@ -295,7 +318,7 @@ classdef NonoGram
                         pTokId(end+1) = jj;
                     end
                 end
-                
+                % 可能token值最大最小值
                 NM = minmax(obj.tokLine{index}(pTokId)');
                 
                 % 对pTokId个数判断
@@ -303,32 +326,22 @@ classdef NonoGram
                     error('Error: 加入黑色方格无法定位到任何Token')
                 elseif(length(pTokId) == 1)
                     % 单个元素，pTokId为true范围被限制
-                    span = max(1, pairs(ii,2) - obj.tokLine{index}(pTokId)) : pairs(ii,1);
-                    x = false(obj.nGHeightRow, 1);
-                    x(span) = true;
-                    obj.startTokLine{index}(:, pTokId) = obj.startTokLine{index}(:, pTokId) & x;
-                    
-                    % 多个元素
-                    % 可能token值最大最小值
+                    span = max(1, pairs(ii,2) - obj.tokLine{index}(pTokId)+1) : pairs(ii,1);
+                    x = true(obj.nGHeightRow, 1);
+                    x(span) = false;
+                    obj.startTokLine{index}(x, pTokId) = false;
                 else
-                    if(NM(1) < pairs(ii,2) - pairs(ii,1) + 1)
-                        warning('Warning:可能错误')
-                        disp(NM);
-                        disp(pairs(ii,:))
-                        disp(index)
-                        continue
-                    end
+                    % 多个元素
                     
                     % 寻找到黑色连续对前后的-1
-                    leftAdd = find(obj.nGMatrix(pairs(ii,1)+NM(1)-1:-1:pairs(ii,2), index) == -1 ,1,'first');
-                    rightAdd = find(obj.nGMatrix(pairs(ii,2)-NM(1)+1:pairs(ii,1), index) == -1 ,1,'first');
+                    leftAdd = sum(find(obj.nGMatrix(pairs(ii,1)+NM(1)-1:-1:pairs(ii,2), index) == -1 ,1,'first'));
+                    rightAdd = sum(find(obj.nGMatrix(pairs(ii,2)-NM(1)+1:pairs(ii,1), index) == -1 ,1,'first'));
                     
                     
                     % 新增黑色
                     % obj.nGMatrix(pairs(ii,1) - leftAdd:pairs(ii,2)+rightAdd,index) = 1;
-                    indexsRow = obj.nGMatrix(:,index) == obj.uTypeUnN;
                     for jj = pairs(ii,1) - leftAdd:pairs(ii,2) + rightAdd
-                        if(indexsRow(jj) == true)
+                        if(obj.nGMatrix(jj,index) == obj.uTypeUnN)
                             obj.newBlcRow{jj}(end+1) = index;
                         end
                     end
@@ -389,6 +402,7 @@ classdef NonoGram
                     end
                 end
                 
+                % 可能token值最大最小值
                 NM = minmax(obj.tokRow{index}(pTokId)');
                 
                 % 对pTokId个数判断
@@ -396,31 +410,20 @@ classdef NonoGram
                     error('Error: 加入黑色方格无法定位到任何Token')
                 elseif(length(pTokId) == 1)
                     % 单个元素，pTokId为true范围被限制
-                    span = max(1, pairs(ii,2) - obj.tokRow{index}(pTokId)) : pairs(ii,1);
-                    x = false(obj.nGWidthLine, 1);
-                    x(span) = true;
-                    obj.startTokRow{index}(:, pTokId) = obj.startTokRow{index}(:, pTokId) & x;
+                    span = max(1, pairs(ii,2) - obj.tokRow{index}(pTokId)+1) : pairs(ii,1);
+                    x = true(obj.nGWidthLine, 1);
+                    x(span) = false;
+                    obj.startTokRow{index}(x, pTokId) = false;
                 else
                     % 多个元素
-                    % 可能token值最大最小值
-                    if(NM(1) < pairs(ii,2) - pairs(ii,1) + 1)
-                        warning('Warning:可能错误')
-                        disp(NM);
-                        disp(pairs(ii,:))
-                        disp(index)
-                        continue
-                    end
-                    
+
                     % 寻找到黑色连续对前后的-1
-                    leftAdd = find(obj.nGMatrix(index, pairs(ii,1)+NM(1)-1:-1:pairs(ii,2)) == -1 ,1,'first');
-                    rightAdd = find(obj.nGMatrix(index, pairs(ii,2)-NM(1)+1:pairs(ii,1)) == -1 ,1,'first');
-                    
-                    
+                    leftAdd = sum(find(obj.nGMatrix(index, pairs(ii,1)+NM(1)-1:-1:pairs(ii,2)) == -1 ,1,'first'));
+                    rightAdd = sum(find(obj.nGMatrix(index, pairs(ii,2)-NM(1)+1:pairs(ii,1)) == -1 ,1,'first'));
                     
                     % 新增黑色
-                    indexsLine = obj.nGMatrix(index,:) == obj.uTypeUnN;
                     for jj = pairs(ii,1) - leftAdd:pairs(ii,2) + rightAdd
-                        if(indexsLine(jj) == true)
+                        if(obj.nGMatrix(index,jj) == obj.uTypeUnN)
                             obj.newBlcLine{jj}(end+1) = index;
                         end
                     end
