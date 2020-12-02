@@ -480,6 +480,29 @@ classdef NonoGram
     end
 end
 
+function startTok = InitStartPosTok(len,token)
+%INITSTARTPOSTOK 可能起始位置矩阵初始化
+%   输入参数:
+%       len             行/列大小
+%       token           某一行/列的Token，矩阵输入
+%   输出参数:
+%       startPosTok     bool型，每一列true代表Token中一个元素允许起始位置
+
+% 空间初始化
+startTok = false(len,length(token));
+
+% 滑动窗口大小
+slideSize = len - (length(token) - 1 + sum(token));
+
+% 每个Token起始位置限制在大小为slideSize的窗口中
+startIndex = 1;
+for ii = 1:length(token)
+    startTok(startIndex:startIndex+slideSize,ii) = true;
+    startIndex = startIndex + token(ii) + 1;
+end
+
+end
+
 function pairs = pairsNewSeek(a, add)
 %PAIRNEWSEEK 计算新加入下标序列add后，变化的连续对
 %   输入参数
