@@ -192,6 +192,11 @@ classdef NonoGram
             unnIndexs = array == obj.uTypeUnN;
             if(~any(unnIndexs))
                 obj.unfinIndexs(obj.unfinIndexs == index) = [];
+            elseif(nnz(array == obj.uTypeBlack) == sum(obj.tok{index}))
+                % obj.unfinIndexs(obj.unfinIndexs == index) = [];
+                for indexW = transpose(find(unnIndexs))
+                    obj.newWht{indexW + indexAdd}(end+1) = index + indexAdd - obj.nGWidthLine;
+                end
             end
             
             % 多个行新增一个元素：列位置index
@@ -263,7 +268,7 @@ classdef NonoGram
                         end
                     end
                 end
-                % 特别的，如果且连续块长度即为最大可能token，新增白色
+                % 特别的，如果且连续块长度即为最大可能token，新增白色，且当前starTok仅存留一个true
                 if(NM(2) == pairs(ii,2) - pairs(ii,1) + 1)
                     if(pairs(ii,1) ~= 1)
                         obj.newWht{index}(end+1) = pairs(ii,1) - 1;
@@ -272,6 +277,10 @@ classdef NonoGram
                     if(pairs(ii,2) ~= arraySize)
                         obj.newWht{index}(end+1) = pairs(ii,2) + 1;
                         obj.newWht{pairs(ii,2)+1+indexAdd}(end+1) = index + indexAdd - obj.nGWidthLine;
+                    end
+                    if(length(pTokId) == 1)
+                        obj.startTok{index}(:, pTokId) = false;
+                        obj.startTok{index}(pairs(ii,1), pTokId) = true;
                     end
                 end
             end
