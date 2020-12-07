@@ -320,6 +320,50 @@ classdef NonoGram
             end
             
         end
+        
+        function mouseSimulate(obj)
+            %MOUSESIMULATE 模拟鼠标操作
+            
+            % 运行py文件，获取四顶点坐标
+            system('nGApex4.py');
+            
+            % 读取四顶点坐标
+            load temp.mat apex
+            
+            % 屏幕像素显示比例
+            screenPixelRatio = 2.5;
+            
+            % 左右像素边界
+            apex = sort(apex);
+            xBound = round(mean(reshape(apex(:,1), [2 2])));
+            yBound = round(mean(reshape(apex(:,2), [2 2])));
+            % 单位间隔
+            xIntv = diff(xBound) / obj.nGWidthLine;
+            yIntv = diff(yBound) / obj.nGHeightRow;
+            if(round(xIntv) ~= round(yIntv))
+                warning('顶点定位出现问题。可能引发不确定错误。')
+            end
+            
+            % 中心坐标
+            % 三个参数，x位置，y位置，是否填空
+            clickPos = zeros(obj.nGWidthLine * obj.nGHeightRow,3);
+            % 偏置
+            xyBias = -[xIntv * 0.5 yIntv * 0.5] + [xBound(1) yBound(1)];
+            % 利用meshgrid直接生成行列信息
+            [X,Y] = meshgrid(1:obj.nGWidthLine, 1:obj.nGHeightRow);
+            clickPos(:,1:2) = [X(:) * xIntv Y(:) * yIntv];
+            
+            % 添加总偏置与250%缩放(因电脑而异)
+            clickPos(:,1:2) = round((clickPos(:,1:2) + xyBias) / screenPixelRatio);
+            
+            % 点击属性设置
+            clickPos(:,3) = obj.nGMatrix(:);
+            
+            % 写入
+            save('temp.mat','clickPos','-append');
+            
+            system('nGClick.py');
+        end
     end
 end
 
