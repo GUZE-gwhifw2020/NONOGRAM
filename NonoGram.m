@@ -13,27 +13,14 @@ classdef NonoGram
     properties
         nGWidthLine         % 宽度，列个数
         nGHeightRow         % 高度，行个数
-        
-        tokLine             % 列Token，大小cell(nGWidthLine,1)
-        tokRow              % 行Token，大小cell(nGHeightRow,1)
-        
-        tokLenLine          % 列Token个体长度
-        tokLenRow           % 行Token个体长度
-        
-        
+        nGWHLR              % 行列总数
+        tok 				% 列行Token
+        tokLength 			% 列行Token长度
         nGMatrix            % 结果矩阵
-        nGMatrixTemp        % 结果暂存矩阵
-        
-        startTokLine        % 列起点逻辑元组
-        startTokRow         % 行起点逻辑元组
-        
-        isFinLine           % 列是否完成标签
-        isFinRow            % 行是否完成标签
-        
-        newBlcLine          % 列新增黑色位置
-        newWhtLine      	% 列新增白色位置
-        newBlcRow       	% 行新增黑色位置
-        newWhtRow         	% 行新增白色位置
+        startTok 			% 列行起点逻辑元组
+        unfinIndexs 		% 列行未完成下标
+        newBlc 				% 列行新增黑色位置
+        newWht 				% 列行新增白色位置
         
     end
     
@@ -44,29 +31,52 @@ classdef NonoGram
             %       strTokenArg     Token字符串
             
             % 函数处理字符串
-            [obj.nGWidthLine,obj.nGHeightRow,obj.tokLine,obj.tokRow,...
-                obj.tokLenLine,obj.tokLenRow,~,~] ...
+            [obj.nGWidthLine,obj.nGHeightRow,tokLine,tokRow,...
+                tokLenLine,tokLenRow,~,~] ...
                 = nGTokenResolve(strTokenArg);
+            
+            obj.nGWHLR = obj.nGWidthLine + obj.nGHeightRow;
+            obj.tok = cat(1, tokLine, tokRow);
+            obj.tokLength = cat(1, tokLenLine, tokLenRow);
+            
             
             % 结果矩阵初始化
             obj.nGMatrix = obj.uTypeUnN * zeros(obj.nGHeightRow, obj.nGWidthLine);
-            obj.nGMatrixTemp = obj.uTypeUnN * zeros(obj.nGHeightRow, obj.nGWidthLine);
             
             % 起点逻辑元组初始化
-            obj.startTokLine = cell(obj.nGWidthLine,1);
-            obj.startTokRow = cell(obj.nGHeightRow,1);
-            
+            obj.startTok = cell(obj.nGWHLR, 1);
             
             % 初始化行列是否完成标签
-            obj.isFinLine = false(obj.nGWidthLine,1);
-            obj.isFinRow = false(obj.nGHeightRow,1);
+            obj.unfinIndexs = 1:obj.nGWHLR;
             
             % 初始化新增位置元组
-            obj.newBlcLine = cell(obj.nGWidthLine,1);
-            obj.newWhtLine = cell(obj.nGWidthLine,1);
-            obj.newBlcRow = cell(obj.nGHeightRow,1);
-            obj.newWhtRow = cell(obj.nGHeightRow,1);
+            obj.newBlc = cell(obj.nGWHLR, 1);
+            obj.newWht = cell(obj.nGWHLR, 1);
             
+        end
+        
+        function obj = InitStartPosTok(obj)
+            %INITSTARTPOSTOK 列行起点逻辑元组初始化
+            for ii = 1:obj.nGWHLR
+                if(ii > obj.nGWidthLine)
+                    arrSize = obj.nGWidthLine;
+                else
+                    arrSize = obj.nGHeightRow;
+                end
+                
+                % 空间初始化
+                obj.startTok{ii} = false(arrSize,obj.tokLength(ii));
+                
+                % 滑动窗口大小
+                slideSize = arrSize - (obj.tokLength(ii) - 1 + sum(obj.tok{ii}));
+                
+                % 每个Token起始位置限制在大小为slideSize的窗口中
+                startIndex = 1;
+                for kk = 1:obj.tokLength(ii)
+                    obj.startTok{ii}(startIndex:startIndex+slideSize,kk) = true;
+                    startIndex = startIndex + obj.tok{ii}(kk) + 1;
+                end
+            end
             
         end
         
@@ -74,388 +84,221 @@ classdef NonoGram
             %GENESIS 求解主循环
             % 1 - 起点逻辑矩阵初始化
             % 2 - 根据更新起点逻辑矩阵确定新加入的B/W
-            % 3 - 新加入的B/W改写起点逻辑矩阵
-            % 4 - 回到2
+            % 3 - 新加入的B/W改写起点逻辑矩阵，回到2
             
             % 1 - 起点逻辑矩阵初始化
-            for ii = 1:obj.nGWidthLine
-                obj.startTokLine{ii} = InitStartPosTok(obj.nGHeightRow,obj.tokLine{ii});
-            end
-            for ii = 1:obj.nGHeightRow
-                obj.startTokRow{ii} = InitStartPosTok(obj.nGWidthLine,obj.tokRow{ii});
-            end
+            obj = obj.InitStartPosTok();
             
-            for iter = 1:100
+            for iter = 1:50
                 % 2 - 根据更新起点逻辑矩阵确定新加入的B/W
+                fprintf('\t\t%d\t%d\n',iter,all(cellfun(@isempty, obj.newBlc)))
+                for ii = obj.unfinIndexs
+                        obj = obj.refreshLR(ii);
+                end
                 if(mod(iter,5) == 0)
-                    for ii = 1:obj.nGWidthLine
-                        obj.newBlcLine{ii} = find(obj.nGMatrix(:,ii) == obj.uTypeBlack);
-                        obj.newWhtLine{ii} = find(obj.nGMatrix(:,ii) == obj.uTypeWhite);
-                    end
-                    for ii = 1:obj.nGHeightRow
-                        obj.newBlcRow{ii} = find(obj.nGMatrix(ii,:) == obj.uTypeBlack);
-                        obj.newWhtRow{ii} = find(obj.nGMatrix(ii,:) == obj.uTypeWhite);
-                    end
-                    
-                else
-                    for ii = 1:obj.nGWidthLine
-                        if(obj.isFinLine(ii) == false)
-                            obj = obj.refreshLine(ii);
-                        end
-                    end
-                    
-                    for ii = 1:obj.nGHeightRow
-                        if(obj.isFinRow(ii) == false)
-                            obj = obj.refreshRow(ii);
+                    for ii = obj.unfinIndexs
+                        if(ii <= obj.nGWidthLine)
+                            obj.newBlc{ii} = cat(2, obj.newBlc{ii}, transpose(find(obj.nGMatrix(:,ii) == obj.uTypeBlack)));
+                            % obj.newWht{ii} = cat(2, obj.newWht{ii}, transpose(find(obj.nGMatrix(:,ii) == obj.uTypeWhite)));
+                        else
+                            obj.newBlc{ii} = cat(2, obj.newBlc{ii}, find(obj.nGMatrix(ii - obj.nGWidthLine,:) == obj.uTypeBlack));
+                            % obj.newWht{ii} = cat(2, obj.newWht{ii}, find(obj.nGMatrix(ii - obj.nGWidthLine,:) == obj.uTypeWhite));
                         end
                     end
                 end
-                
                 % 3 - 根据新加入的B/W改写起点逻辑矩阵
-                for ii = 1:obj.nGWidthLine
-                    if(obj.isFinLine(ii) == false)
-                        obj = obj.addWhiteLine(ii);
-                    end
+                for ii = obj.unfinIndexs
+                    obj = obj.addWhiteLR(ii);
                 end
-                for ii = 1:obj.nGHeightRow
-                    if(obj.isFinRow(ii) == false)
-                        obj = obj.addWhiteRow(ii);
-                    end
+                for ii = obj.unfinIndexs
+                    obj = obj.addBlackLR(ii);
                 end
-                for ii = 1:obj.nGWidthLine
-                    if(obj.isFinLine(ii) == false)
-                        obj = obj.addBlackLine(ii);
-                    end
-                end
-                for ii = 1:obj.nGHeightRow
-                    if(obj.isFinRow(ii) == false)
-                        obj = obj.addBlackRow(ii);
-                    end
-                end
-                
-                % obj.nGMatrix
             end
         end
         
-        function obj = addWhiteLine(obj, index)
-            %ADDWHITELINE 依据第index列新增白色更新起点坐标
+        function obj = addWhiteLR(obj, index)
+            %ADDWHITELR 依据第index列或第index-obj.nGWidthLine行新增白点更新起点坐标
             
             % 赋值
-            obj.nGMatrix(obj.newWhtLine{index}, index) = obj.uTypeWhite;
+            if(index > obj.nGWidthLine)
+                obj.nGMatrix(index - obj.nGWidthLine, obj.newWht{index}) = obj.uTypeWhite;
+            else
+                obj.nGMatrix(obj.newWht{index}, index) = obj.uTypeWhite;
+            end
             
-            
-            % 对每一个添加的点(行数indexRow)处理
-            for kk = 1:length(obj.newWhtLine{index})
-                for ii = obj.tokLenLine(index):-1:1
-                    indexRow = obj.newWhtLine{index}(kk);
+            % 对每一个添加的白点处理
+            for kk = 1:length(obj.newWht{index})
+                indexWht = obj.newWht{index}(kk);
+                for ii = obj.tokLength(index):-1:1
                     % 每一个token元素在加入白色点前token个方格置false
-                    obj.startTokLine{index}(max(1, indexRow - obj.tokLine{index}(ii) + 1):indexRow, ii) = false;
+                    obj.startTok{index}(max(1, indexWht - obj.tok{index}(ii) + 1):indexWht, ii) = false;
                 end
             end
             
             % 间隔式收缩
-            for ii = obj.tokLenLine(index)-1:-1:1
-                tIndex = find(obj.startTokLine{index}(:,ii+1),1,'last') - obj.tokLine{index}(ii);
-                obj.startTokLine{index}(tIndex:end,ii) = false;
+            for ii = obj.tokLength(index)-1:-1:1
+                tIndex = find(obj.startTok{index}(:,ii+1),1,'last') - obj.tok{index}(ii);
+                obj.startTok{index}(tIndex:end,ii) = false;
             end
             
-            for ii = 1:obj.tokLenLine(index) - 1
-                sIndex = find(obj.startTokLine{index}(:,ii),1,'first') + obj.tokLine{index}(ii);
-                obj.startTokLine{index}(1:sIndex,ii+1) = false;
-            end
-            
-            % 清空
-            obj.newWhtLine{index} = [];
-            
-        end
-        
-        function obj = addWhiteRow(obj, index)
-            %ADDWHITEROW 依据第index行新增白色更新起点坐标
-            
-            % 赋值
-            obj.nGMatrix(index, obj.newWhtRow{index}) = obj.uTypeWhite;
-            
-            % 对每一个添加的点(列数indexLine)处理
-            for kk = 1:length(obj.newWhtRow{index})
-                for ii = obj.tokLenRow(index):-1:1
-                    indexLine = obj.newWhtRow{index}(kk);
-                    % 每一个token元素在加入白色点前token个方格置false
-                    obj.startTokRow{index}(max(1, indexLine - obj.tokRow{index}(ii) + 1):indexLine, ii) = false;
-                end
-                
-            end
-            
-            % 间隔式收缩
-            for ii = obj.tokLenRow(index)-1:-1:1
-                tIndex = find(obj.startTokRow{index}(:,ii+1),1,'last') - obj.tokRow{index}(ii);
-                obj.startTokRow{index}(tIndex:end,ii) = false;
-            end
-            
-            for ii = 1:obj.tokLenRow(index) - 1
-                sIndex = find(obj.startTokRow{index}(:,ii),1,'first') + obj.tokRow{index}(ii);
-                obj.startTokRow{index}(1:sIndex,ii+1) = false;
+            for ii = 1:obj.tokLength(index) - 1
+                sIndex = find(obj.startTok{index}(:,ii),1,'first') + obj.tok{index}(ii);
+                obj.startTok{index}(1:sIndex,ii+1) = false;
             end
             
             % 清空
-            obj.newWhtRow{index} = [];
+            obj.newWht{index} = [];
+            
         end
         
-        function obj = refreshLine(obj, index)
-            %REFRESHLINE 更新第index列
-            % 输入参数
-            %       index      列序号
-            % 黑色部分: 任一个Token元素延申重叠区域
-            % 白色部分: 所有Token元素延申均不重叠区域
-            blackIndexs = false(obj.nGHeightRow,1);
-            whiteIndexs = true(obj.nGHeightRow,1);
-            for ii = 1:obj.tokLenLine(index)
+        function obj = refreshLR(obj, index)
+            %REFRESHLR 依据第index列或第index-obj.nGWidthLine行起点坐标确定新的白点和黑点
+            
+            if(index > obj.nGWidthLine)
+                arrSize = obj.nGWidthLine;
+                array = obj.nGMatrix(index-obj.nGWidthLine,:)';
+                indexAdd = 0;
+            else
+                arrSize = obj.nGHeightRow;
+                array = obj.nGMatrix(:,index);
+                indexAdd = obj.nGWidthLine;
+            end
+            
+            % 黑色部分: Token元素起点延申重叠等于起点数区域
+            % 白色部分: 所有Token元素起点延申均不重叠区域
+            blackIndexs = false(arrSize,1);
+            whiteIndexs = true(arrSize,1);
+            for indexB = 1:obj.tokLength(index)
                 % 利用卷积确定延申部分(默认full,仅取前nGHeight个)
-                C = conv(obj.startTokLine{index}(:,ii), true(obj.tokLine{index}(ii),1));
+                C = conv(obj.startTok{index}(:,indexB), true(obj.tok{index}(indexB),1));
                 
                 % 黑色部分
                 blackIndexs = blackIndexs | ...
-                    C(1:obj.nGHeightRow) == sum(obj.startTokLine{index}(:,ii));
+                    C(1:arrSize) == sum(obj.startTok{index}(:,indexB));
                 
                 % 白色部分
-                whiteIndexs = whiteIndexs & (~C(1:obj.nGHeightRow));
+                whiteIndexs = whiteIndexs & (~C(1:arrSize));
             end
             
             % 错误检测
-            if(any(blackIndexs & obj.nGMatrix(:,index) == obj.uTypeWhite))
+            if(any(blackIndexs & array == obj.uTypeWhite))
                 error('Error: 检测到在白色位置写入黑色');
             end
-            if(any(whiteIndexs & obj.nGMatrix(:,index) == obj.uTypeBlack))
+            if(any(whiteIndexs & array == obj.uTypeBlack))
                 error('Error: 检测到在黑色位置写入白色');
             end
             
             % 判断是否完成
-            unnIndexs = obj.nGMatrix(:,index) == obj.uTypeUnN;
-            if(all(~unnIndexs))
-                obj.isFinLine(index) = true;
+            unnIndexs = array == obj.uTypeUnN;
+            if(~any(unnIndexs))
+                obj.unfinIndexs(obj.unfinIndexs == index) = [];
+            elseif(nnz(array == obj.uTypeBlack) == sum(obj.tok{index}))
+                % obj.unfinIndexs(obj.unfinIndexs == index) = [];
+                for indexW = transpose(find(unnIndexs))
+                    obj.newWht{indexW + indexAdd}(end+1) = index + indexAdd - obj.nGWidthLine;
+                end
             end
             
             % 多个行新增一个元素：列位置index
-            indexsBlcRow = find(blackIndexs & unnIndexs);
-            indexsWhtRow = find(whiteIndexs & unnIndexs);
-            for ii = 1:length(indexsBlcRow)
-                obj.newBlcRow{indexsBlcRow(ii)}(end+1) = index;
+            for indexB = transpose(find(blackIndexs & unnIndexs))
+                obj.newBlc{indexB + indexAdd}(end+1) = index + indexAdd - obj.nGWidthLine;
             end
-            for ii = 1:length(indexsWhtRow)
-                obj.newWhtRow{indexsWhtRow(ii)}(end+1) = index;
-            end
-            
-            
-        end
-        
-        function obj = refreshRow(obj, index)
-            %REFRESROW 更新第ii行
-            % 输入参数
-            %       index      行序号
-            blackIndexs = false(obj.nGWidthLine,1);
-            whiteIndexs = true(obj.nGWidthLine,1);
-            for ii = 1:obj.tokLenRow(index)
-                % 利用卷积确定延申部分(默认full,仅取前nGHeight个)
-                C = conv(obj.startTokRow{index}(:,ii), true(obj.tokRow{index}(ii),1));
-                
-                % 黑色部分
-                blackIndexs = blackIndexs | ...
-                    C(1:obj.nGWidthLine) == sum(obj.startTokRow{index}(:,ii));
-                
-                % 白色部分
-                whiteIndexs = whiteIndexs & (~C(1:obj.nGWidthLine));
-            end
-            
-            % 错误检测
-            if(any(blackIndexs & obj.nGMatrix(index,:) == obj.uTypeWhite))
-                error('Error: 检测到在白色位置写入黑色');
-            end
-            if(any(whiteIndexs & obj.nGMatrix(index,:) == obj.uTypeBlack))
-                error('Error: 检测到在黑色位置写入白色');
-            end
-            
-            % 判断是否完成
-            unnIndexs = obj.nGMatrix(index,:)' == obj.uTypeUnN;
-            if(all(~unnIndexs))
-                obj.isFinRow(index) = true;
-            end
-            
-            % 列新增位置(B/W下标是列向量，原始矩阵需要转置)
-            indexsBlcLine = find(blackIndexs & obj.nGMatrix(index,:)' == obj.uTypeUnN);
-            indexsWhtLine = find(whiteIndexs & obj.nGMatrix(index,:)' == obj.uTypeUnN);
-            
-            for ii = 1:length(indexsBlcLine)
-                obj.newBlcLine{indexsBlcLine(ii)}(end+1) = index;
-            end
-            for ii = 1:length(indexsWhtLine)
-                obj.newWhtLine{indexsWhtLine(ii)}(end+1) = index;
+            for indexW = transpose(find(whiteIndexs & unnIndexs))
+                obj.newWht{indexW + indexAdd}(end+1) = index + indexAdd - obj.nGWidthLine;
             end
             
         end
         
-        function obj = addBlackLine(obj, index)
-            %ADDBLACKLINE 第index列添加黑色单元
-            % 输入参数
-            %        index   列序号
+        function obj = addBlackLR(obj, index)
+            %ADDBLACKLR 依据第index列或第index-obj.nGWidthLine行新增黑点更新起点坐标
             
-            % 新增的黑色单元存储在obj.newBlcLine{index}中
-            % 原始序列为obj.nGMatrix(:,index)
+            % 新增的黑色单元存储在obj.newBlc{index}中
+            % 原始序列为obj.nGMatrix(:,index)或obj.nGMatrix(index -
+            % nGWidthLine,:)中
+            
+            if(index > obj.nGWidthLine)
+                array = obj.nGMatrix(index - obj.nGWidthLine,:);
+                obj.nGMatrix(index - obj.nGWidthLine, obj.newBlc{index}) = obj.uTypeBlack;
+                arraySize = obj.nGWidthLine;
+                indexAdd = 0;
+            else
+                array = obj.nGMatrix(:,index);
+                obj.nGMatrix(obj.newBlc{index}, index) = obj.uTypeBlack;
+                arraySize = obj.nGHeightRow;
+                indexAdd = obj.nGWidthLine;
+            end
             
             % 计算更新的黑色连续对
-            pairs = pairsNewSeek(obj.nGMatrix(:,index), obj.newBlcLine{index});
-            
-            % 赋值
-            obj.nGMatrix(obj.newBlcLine{index}, index) = obj.uTypeBlack;
+            pairs = pairsSeek(array, obj.newBlc{index});
             
             % 每一个连续对范围pairs(ii,1)~pairs(ii,2)
             for ii = 1:size(pairs,1)
                 % 可能属于哪一(几)个token元素
                 pTokId = [];
-                for jj = 1:obj.tokLenLine(index)
+                for jj = 1:obj.tokLength(index)
                     % pairs(ii,2)前tokLen至pairs(ii,1)范围是否有一个true
-                    span = max(1, pairs(ii,2) - obj.tokLine{index}(jj) + 1) : pairs(ii,1);
-                    if(any(obj.startTokLine{index}(span, jj)))
+                    span = max(1, pairs(ii,2) - obj.tok{index}(jj) + 1) : pairs(ii,1);
+                    if(any(obj.startTok{index}(span, jj)))
                         % 确认可能
                         pTokId(end+1) = jj;
                     end
                 end
                 % 可能token值最大最小值
-                NM = minmax(obj.tokLine{index}(pTokId)');
+                NM = minmax(obj.tok{index}(pTokId)');
                 
                 % 对pTokId个数判断
                 if(isempty(pTokId))
                     error('Error: 加入黑色方格无法定位到任何Token')
                 elseif(length(pTokId) == 1)
                     % 单个元素，pTokId为true范围被限制
-                    span = max(1, pairs(ii,2) - obj.tokLine{index}(pTokId)+1) : pairs(ii,1);
-                    x = true(obj.nGHeightRow, 1);
+                    span = max(1, pairs(ii,2) - obj.tok{index}(pTokId)+1) : pairs(ii,1);
+                    x = true(arraySize, 1);
                     x(span) = false;
-                    obj.startTokLine{index}(x, pTokId) = false;
+                    obj.startTok{index}(x, pTokId) = false;
                 else
                     % 多个元素
-                    
-                    % 寻找到黑色连续对前后的-1
-                    leftAdd = sum(find(obj.nGMatrix(pairs(ii,1)+NM(1)-1:-1:pairs(ii,2), index) == -1 ,1,'first'));
-                    rightAdd = sum(find(obj.nGMatrix(pairs(ii,2)-NM(1)+1:pairs(ii,1), index) == -1 ,1,'first'));
-                    
+                    % 寻找到黑色连续对前后的白色方块
+                    leftAdd = sum(find(array(pairs(ii,1)+NM(1)-1:-1:pairs(ii,2)) == obj.uTypeWhite,1,'first'));
+                    rightAdd = sum(find(array(pairs(ii,2)-NM(1)+1:pairs(ii,1)) == obj.uTypeWhite,1,'first'));
                     
                     % 新增黑色
-                    % obj.nGMatrix(pairs(ii,1) - leftAdd:pairs(ii,2)+rightAdd,index) = 1;
                     for jj = pairs(ii,1) - leftAdd:pairs(ii,2) + rightAdd
-                        if(obj.nGMatrix(jj,index) == obj.uTypeUnN)
-                            obj.newBlcRow{jj}(end+1) = index;
+                        if(array(jj) == obj.uTypeUnN)
+                            obj.newBlc{jj + indexAdd}(end+1) = index + indexAdd - obj.nGWidthLine;
                         end
                     end
                 end
-                % 特别的，如果最大最小相同，且连续块长度即为此值，新增白色
-                if(NM(1) == NM(2) && NM(1) == pairs(ii,2) - pairs(ii,1) + 1)
+                % 特别的，如果且连续块长度即为最大可能token，新增白色，且当前starTok仅存留一个true
+                if(NM(2) == pairs(ii,2) - pairs(ii,1) + 1)
                     if(pairs(ii,1) ~= 1)
-                        obj.newWhtLine{index}(end+1) = pairs(ii,1) - 1;
-                        obj.newWhtRow{pairs(ii,1)-1}(end+1) = index;
+                        obj.newWht{index}(end+1) = pairs(ii,1) - 1;
+                        obj.newWht{pairs(ii,1)-1+indexAdd}(end+1) = index + indexAdd - obj.nGWidthLine;
                     end
-                    if(pairs(ii,2) ~= obj.nGHeightRow)
-                        obj.newWhtLine{index}(end+1) = pairs(ii,2) + 1;
-                        obj.newWhtRow{pairs(ii,2)+1}(end+1) = index;
+                    if(pairs(ii,2) ~= arraySize)
+                        obj.newWht{index}(end+1) = pairs(ii,2) + 1;
+                        obj.newWht{pairs(ii,2)+1+indexAdd}(end+1) = index + indexAdd - obj.nGWidthLine;
+                    end
+                    if(length(pTokId) == 1)
+                        obj.startTok{index}(:, pTokId) = false;
+                        obj.startTok{index}(pairs(ii,1), pTokId) = true;
                     end
                 end
             end
             
             % 间隔式收缩
-            for ii = obj.tokLenLine(index) - 1:-1:1
-                tIndex = find(obj.startTokLine{index}(:,ii+1),1,'last') - obj.tokLine{index}(ii);
-                obj.startTokLine{index}(tIndex:end,ii) = false;
+            for ii = obj.tokLength(index) - 1:-1:1
+                tIndex = find(obj.startTok{index}(:,ii+1),1,'last') - obj.tok{index}(ii);
+                obj.startTok{index}(tIndex:end,ii) = false;
             end
             
-            for ii = 1:obj.tokLenLine(index) - 1
-                sIndex = find(obj.startTokLine{index}(:,ii),1,'first') + obj.tokLine{index}(ii);
-                obj.startTokLine{index}(1:sIndex,ii+1) = false;
+            for ii = 1:obj.tokLength(index) - 1
+                sIndex = find(obj.startTok{index}(:,ii),1,'first') + obj.tok{index}(ii);
+                obj.startTok{index}(1:sIndex,ii+1) = false;
             end
             
-            % 清空obj.newBlcLine{index}
-            obj.newBlcLine{index} = [];
+            % 清空obj.newBlc{index}
+            obj.newBlc{index} = [];
         end
-        
-        function obj = addBlackRow(obj, index)
-            %ADDBLACKROW 第index行添加黑色单元
-            % 输入参数
-            %        index   行序号
-            
-            % 新增的黑色单元存储在obj.newBlcRow{index}中
-            % 原始序列为obj.nGMatrix(index,:)
-            
-            % 计算更新的黑色连续对
-            pairs = pairsNewSeek(obj.nGMatrix(index,:), obj.newBlcRow{index});
-            
-            % 赋值
-            obj.nGMatrix(index, obj.newBlcRow{index}) = obj.uTypeBlack;
-            
-            
-            % 每一个连续对范围pairs(ii,1)~pairs(ii,2)
-            for ii = 1:size(pairs,1)
-                % 可能属于哪一(几)个token元素
-                pTokId = [];
-                for jj = 1:obj.tokLenRow(index)
-                    % pairs(ii,2)前tokLen至pairs(ii,1)范围是否有一个true
-                    span = max(1, pairs(ii,2) - obj.tokRow{index}(jj) + 1) : pairs(ii,1);
-                    if(any(obj.startTokRow{index}(span, jj)))
-                        % 确认可能
-                        pTokId(end+1) = jj;
-                    end
-                end
-                
-                % 可能token值最大最小值
-                NM = minmax(obj.tokRow{index}(pTokId)');
-                
-                % 对pTokId个数判断
-                if(isempty(pTokId))
-                    error('Error: 加入黑色方格无法定位到任何Token')
-                elseif(length(pTokId) == 1)
-                    % 单个元素，pTokId为true范围被限制
-                    span = max(1, pairs(ii,2) - obj.tokRow{index}(pTokId)+1) : pairs(ii,1);
-                    x = true(obj.nGWidthLine, 1);
-                    x(span) = false;
-                    obj.startTokRow{index}(x, pTokId) = false;
-                else
-                    % 多个元素
-
-                    % 寻找到黑色连续对前后的-1
-                    leftAdd = sum(find(obj.nGMatrix(index, pairs(ii,1)+NM(1)-1:-1:pairs(ii,2)) == -1 ,1,'first'));
-                    rightAdd = sum(find(obj.nGMatrix(index, pairs(ii,2)-NM(1)+1:pairs(ii,1)) == -1 ,1,'first'));
-                    
-                    % 新增黑色
-                    for jj = pairs(ii,1) - leftAdd:pairs(ii,2) + rightAdd
-                        if(obj.nGMatrix(index,jj) == obj.uTypeUnN)
-                            obj.newBlcLine{jj}(end+1) = index;
-                        end
-                    end
-                end
-                % 特别的，如果最大最小相同，且连续块长度即为此值，新增白色
-                if(NM(1) == NM(2) && NM(1) == pairs(ii,2) - pairs(ii,1) + 1)
-                    if(pairs(ii,1) ~= 1)
-                        obj.newWhtRow{index}(end+1) = pairs(ii,1) - 1;
-                        obj.newWhtLine{pairs(ii,1)-1}(end+1) = index;
-                    end
-                    if(pairs(ii,2) ~= obj.nGWidthLine)
-                        obj.newWhtRow{index}(end+1) = pairs(ii,2) + 1;
-                        obj.newWhtLine{pairs(ii,2)+1}(end+1) = index;
-                    end
-                end
-            end
-            
-            % 间隔式收缩
-            for ii = obj.tokLenRow(index)-1:-1:1
-                tIndex = find(obj.startTokRow{index}(:,ii+1),1,'last') - obj.tokRow{index}(ii);
-                obj.startTokRow{index}(tIndex:end,ii) = false;
-            end
-            
-            for ii = 1:obj.tokLenRow(index) - 1
-                sIndex = find(obj.startTokRow{index}(:,ii),1,'first') + obj.tokRow{index}(ii);
-                obj.startTokRow{index}(1:sIndex,ii+1) = false;
-            end
-            
-            % 清空obj.newBlcRow{index}
-            obj.newBlcRow{index} = [];
-        end
-        
         
         function Display(obj)
             %DISPLAY 绘图函数
@@ -480,31 +323,8 @@ classdef NonoGram
     end
 end
 
-function startTok = InitStartPosTok(len,token)
-%INITSTARTPOSTOK 可能起始位置矩阵初始化
-%   输入参数:
-%       len             行/列大小
-%       token           某一行/列的Token，矩阵输入
-%   输出参数:
-%       startPosTok     bool型，每一列true代表Token中一个元素允许起始位置
-
-% 空间初始化
-startTok = false(len,length(token));
-
-% 滑动窗口大小
-slideSize = len - (length(token) - 1 + sum(token));
-
-% 每个Token起始位置限制在大小为slideSize的窗口中
-startIndex = 1;
-for ii = 1:length(token)
-    startTok(startIndex:startIndex+slideSize,ii) = true;
-    startIndex = startIndex + token(ii) + 1;
-end
-
-end
-
-function pairs = pairsNewSeek(a, add)
-%PAIRNEWSEEK 计算新加入下标序列add后，变化的连续对
+function pairs = pairsSeek(a, add)
+%PAIRSSEEK 计算新加入下标序列add对应的新连续对
 %   输入参数
 %       a           原序列
 %       add         新增黑色下标
@@ -513,6 +333,12 @@ function pairs = pairsNewSeek(a, add)
 % a = [1 0 0 1 0 1 1];
 % s = [1 4 6];
 % e = [1 4 7];
+
+% Exp:
+% a = [1 0 0 1 0 1 1];
+% add = [2 5]
+% pairs = [1 2;3 7];
+
 
 % 新加入位置设置为1
 add = unique(add);
