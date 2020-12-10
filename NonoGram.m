@@ -90,8 +90,11 @@ classdef NonoGram
             obj = obj.InitStartPosTok();
             
             for iter = 1:50
+                fprintf('\t%d',iter);
+                if(~mod(iter,10))
+                    fprintf('\n');
+                end
                 % 2 - 根据更新起点逻辑矩阵确定新加入的B/W
-                fprintf('\t\t%d\t%d\n',iter,all(cellfun(@isempty, obj.newBlc)))
                 for ii = obj.unfinIndexs
                         obj = obj.refreshLR(ii);
                 end
@@ -99,10 +102,10 @@ classdef NonoGram
                     for ii = obj.unfinIndexs
                         if(ii <= obj.nGWidthLine)
                             obj.newBlc{ii} = cat(2, obj.newBlc{ii}, transpose(find(obj.nGMatrix(:,ii) == obj.uTypeBlack)));
-                            % obj.newWht{ii} = cat(2, obj.newWht{ii}, transpose(find(obj.nGMatrix(:,ii) == obj.uTypeWhite)));
+                            obj.newWht{ii} = cat(2, obj.newWht{ii}, transpose(find(obj.nGMatrix(:,ii) == obj.uTypeWhite)));
                         else
                             obj.newBlc{ii} = cat(2, obj.newBlc{ii}, find(obj.nGMatrix(ii - obj.nGWidthLine,:) == obj.uTypeBlack));
-                            % obj.newWht{ii} = cat(2, obj.newWht{ii}, find(obj.nGMatrix(ii - obj.nGWidthLine,:) == obj.uTypeWhite));
+                            obj.newWht{ii} = cat(2, obj.newWht{ii}, find(obj.nGMatrix(ii - obj.nGWidthLine,:) == obj.uTypeWhite));
                         end
                     end
                 end
