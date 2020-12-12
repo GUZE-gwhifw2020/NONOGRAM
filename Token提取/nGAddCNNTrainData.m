@@ -52,7 +52,7 @@ fprintf('\t 宽度(列数):%d\n\t 高度(行数):%d\n',nGWidth,nGHeight);
 %% 读取Token字符串并进行比较
 tokenStr = input('     输入Nonogram的Token:','s');
 % 解析Token字符串
-[nGWidthT,nGHeightT,nGLenTokenLineT,nGLenTokenRowT,~,~,~,~] = nGTokenResolve(tokenStr);
+[nGWidthT,nGHeightT,nGtok,nGTokLen,~] = nGTokenResolve2(tokenStr);
 
 % 判断是否正确
 if(nGWidth ~= nGWidthT || nGHeight ~= nGHeightT)
@@ -61,17 +61,19 @@ if(nGWidth ~= nGWidthT || nGHeight ~= nGHeightT)
 end
 % 列Token
 imgNumFun = @(imgSet) size(imgSet,3);
-tokenNum = cellfun(imgNumFun,ImgSetPatchRow);
-tokenNumT = cellfun(@length,nGLenTokenRowT);
-if(~isequal(tokenNum,tokenNumT))
+tokenNum = cellfun(imgNumFun,ImgSetPatchLine);
+% tokenNumT = cellfun(@length,nGtok(1:nGWidthT));
+tokenNumT = nGTokLen(1:nGWidthT);
+if(~isequal(tokenNum,tokenNumT(:)))
     disp(tokenNum);
     disp(tokenNumT);
     error('Error：列Token信息图片与字符Token读取结果不对应。');
 end
 % 行Token
-tokenNum = cellfun(imgNumFun,ImgSetPatchLine);
-tokenNumT = cellfun(@length,nGLenTokenLineT);
-if(~isequal(tokenNum,tokenNumT))
+tokenNum = cellfun(imgNumFun,ImgSetPatchRow);
+% tokenNumT = cellfun(@length,nGtok(nGWidthT+1:end));
+tokenNumT = nGTokLen(nGWidthT+1:end);
+if(~isequal(tokenNum,tokenNumT(:)))
     disp(tokenNum);
     disp(tokenNumT);
     error('Error：行Token信息图片与字符Token读取结果不对应。');
@@ -82,12 +84,12 @@ end
 dataSetNum = length(nGImgLabel);
 
 % 列Token
-nGImgLabel = cat(1, nGImgLabel, cell2mat(nGLenTokenRowT));
+nGImgLabel = cat(1, nGImgLabel, cell2mat(nGtok(1:nGWidthT)'));
 for ii = 1:length(ImgSetPatchRow)
     nGImgSet = cat(3,nGImgSet,ImgSetPatchRow{ii});
 end
 % 行Token
-nGImgLabel = cat(1, nGImgLabel, cell2mat(nGLenTokenLineT));
+nGImgLabel = cat(1, nGImgLabel, cell2mat(nGtok(nGWidthT+1:end)'));
 for ii = 1:length(ImgSetPatchLine)
     nGImgSet = cat(3,nGImgSet,ImgSetPatchLine{ii});
 end
