@@ -31,15 +31,11 @@ classdef NonoGram
             %       strTokenArg     Token字符串
             
             % 函数处理字符串
-            [obj.nGWidthLine,obj.nGHeightRow,tokLine,tokRow,...
-                tokLenLine,tokLenRow,~,~] ...
-                = nGTokenResolve(strTokenArg);
+            [obj.nGWidthLine,obj.nGHeightRow,obj.tok,obj.tokLength,~]...
+                = nGTokenResolve2(strTokenArg);
             
             obj.nGWHLR = obj.nGWidthLine + obj.nGHeightRow;
-            obj.tok = cat(1, tokLine, tokRow);
-            obj.tokLength = cat(1, tokLenLine, tokLenRow);
-            
-            
+
             % 结果矩阵初始化
             obj.nGMatrix = obj.uTypeUnN * zeros(obj.nGHeightRow, obj.nGWidthLine);
             
