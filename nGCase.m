@@ -9,11 +9,15 @@
 % clc
 
 %%
-strToken = input('输入Token：','s');
+strToken = input('    输入Token:','s');
 
 %%
 addpath('Function')
 X = NonoGram(strToken);
+
 %%
 X = X.Genesis();
+
+%%
 X.Display();
+X.SavePuzzle();
