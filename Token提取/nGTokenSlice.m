@@ -93,8 +93,8 @@ subplot(2,1,2);
 fprintf('\t 行列间隔标准差: %3f,%3f\n',...
     deviCal(LocsGridRowS,1.1),deviCal(LocsGridLineS,1.1));
 
-% 列向求和修正
-if(mod(nGWidth,5) ~= 0)
+% 列向求和修正(原先以是否为5倍数为判决，漏洞较大)
+if(deviCal(LocsGridLineS,1.1) > 1.5)
     warning('Warning: 宽度不是5的倍数，进行修正。');
     % 强制显示图片
     isDisplay = true;
@@ -103,8 +103,8 @@ if(mod(nGWidth,5) ~= 0)
     [nGWidth, LocsGridLineS, LocsGridLineE] = sliceLocateRevise(sum(imageBW,1),LocsGridLineS);
 end
 
-% 行向求和修正
-if(mod(nGHeight,5) ~= 0)
+% 行向求和修正(原先以是否为5倍数为判决，漏洞较大)
+if(deviCal(LocsGridRowS,1.1) > 1.5)
     warning('Warning: 高度不是5的倍数，进行修正。');
     % 强制显示图片
     isDisplay = true;
