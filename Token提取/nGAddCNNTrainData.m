@@ -85,13 +85,13 @@ dataSetNum = length(nGImgLabel);
 
 % 列Token
 nGImgLabel = cat(1, nGImgLabel, cell2mat(nGtok(1:nGWidthT)'));
-for ii = 1:length(ImgSetPatchRow)
-    nGImgSet = cat(3,nGImgSet,ImgSetPatchRow{ii});
+for ii = 1:length(ImgSetPatchLine)
+    nGImgSet = cat(3,nGImgSet,ImgSetPatchLine{ii});
 end
 % 行Token
 nGImgLabel = cat(1, nGImgLabel, cell2mat(nGtok(nGWidthT+1:end)'));
-for ii = 1:length(ImgSetPatchLine)
-    nGImgSet = cat(3,nGImgSet,ImgSetPatchLine{ii});
+for ii = 1:length(ImgSetPatchRow)
+    nGImgSet = cat(3,nGImgSet,ImgSetPatchRow{ii});
 end
 
 % 存储文件信息
