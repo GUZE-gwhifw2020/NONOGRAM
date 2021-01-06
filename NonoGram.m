@@ -433,11 +433,6 @@ classdef NonoGram
             
             system('nGClick.py');
         end
-<<<<<<< Updated upstream
-=======
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
         
         function SavePuzzle(obj)
             %SAVEPUZZLE 存储token字符串
@@ -447,11 +442,7 @@ classdef NonoGram
                 load tokSave.mat sizeWLHR tokStrCell
             else
                 sizeWLHR = [];
-<<<<<<< Updated upstream
-                tokStrCell = cell();
-=======
                 tokStrCell = cell(0);
->>>>>>> Stashed changes
             end
             
             % 比较原有存储
@@ -465,12 +456,7 @@ classdef NonoGram
                 save tokSave.mat sizeWLHR tokStrCell
             end
             
-            
         end
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
->>>>>>> Stashed changes
     end
 end
 
