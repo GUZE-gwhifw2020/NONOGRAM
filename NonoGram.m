@@ -22,6 +22,7 @@ classdef NonoGram
         newBlc 				% 列行新增黑色位置
         newWht 				% 列行新增白色位置
         
+        strToken            % token字符串
     end
     
     methods
@@ -30,16 +31,15 @@ classdef NonoGram
             %   输入参数:
             %       strTokenArg     Token字符串
             
+            % 保存token字符串
+            obj.strToken = strTokenArg;
+            
             % 函数处理字符串
-            [obj.nGWidthLine,obj.nGHeightRow,tokLine,tokRow,...
-                tokLenLine,tokLenRow,~,~] ...
-                = nGTokenResolve(strTokenArg);
+            [obj.nGWidthLine,obj.nGHeightRow,obj.tok,obj.tokLength,~]...
+                = nGTokenResolve2(strTokenArg);
             
             obj.nGWHLR = obj.nGWidthLine + obj.nGHeightRow;
-            obj.tok = cat(1, tokLine, tokRow);
-            obj.tokLength = cat(1, tokLenLine, tokLenRow);
-            
-            
+
             % 结果矩阵初始化
             obj.nGMatrix = obj.uTypeUnN * zeros(obj.nGHeightRow, obj.nGWidthLine);
             
@@ -55,7 +55,7 @@ classdef NonoGram
             
         end
         
-        function obj = InitStartPosTok(obj)
+        function obj = initStartPosTok(obj)
             %INITSTARTPOSTOK 列行起点逻辑元组初始化
             for ii = 1:obj.nGWHLR
                 if(ii > obj.nGWidthLine)
@@ -87,7 +87,7 @@ classdef NonoGram
             % 3 - 新加入的B/W改写起点逻辑矩阵，回到2
             
             % 1 - 起点逻辑矩阵初始化
-            obj = obj.InitStartPosTok();
+            obj = obj.initStartPosTok();
             
             for iter = 1:50
                 fprintf('\t%d',iter);
@@ -324,7 +324,7 @@ classdef NonoGram
             
         end
         
-        function mouseSimulate(obj)
+        function MouseSimulate(obj)
             %MOUSESIMULATE 模拟鼠标操作
             
             % 运行py文件，获取四顶点坐标
@@ -366,6 +366,31 @@ classdef NonoGram
             save('temp.mat','clickPos','-append');
             
             system('nGClick.py');
+        end
+        
+        function SavePuzzle(obj)
+            %SAVEPUZZLE 存储token字符串
+            
+            % 读取原有存储记录
+            if(exist('tokSave.mat','file'))
+                load tokSave.mat sizeWLHR tokStrCell
+            else
+                sizeWLHR = [];
+                tokStrCell = cell();
+            end
+            
+            % 比较原有存储
+            hisComp = cellfun(@(x) strcmp(x, obj.strToken), tokStrCell);
+            
+            % 是否重复
+            if(~any(hisComp))
+                % 写入
+                tokStrCell(end + 1) = {obj.strToken};
+                sizeWLHR(:, end + 1) = [obj.nGWidthLine;obj.nGHeightRow];
+                save tokSave.mat sizeWLHR tokStrCell
+            end
+            
+            
         end
     end
 end

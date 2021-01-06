@@ -4,63 +4,63 @@ function [nonoWidthLine,nonoHeightRow,...
     t_NonoTokenSumLine,t_NonoTokenSumRow] ...
     = nGTokenResolve(taskTokenStr)
 
-%nGTokenResolve token×Ö·û´®Éú³Étoken¾ØÕó
+%nGTokenResolve tokenå­—ç¬¦ä¸²ç”ŸæˆtokençŸ©é˜µ
 %       Ouput
-%       nonoWidth                   :¿í¶È(ÁĞ¸öÊı)
-%       nonoHeight                  :¸ß¶È(ĞĞ¸öÊı)
-%       t_NonoTokenLine             :Ã¿ÁĞtoken
-%       t_NonoTokenRow              :Ã¿ĞĞtoken
-%       t_NonoTokenLengthLine       :ÁĞtoken³¤¶È
-%       t_NonoTokenLengthRow        :ĞĞtoken³¤¶È
-%       t_NonoTokenSumLine          :Ã¿ÁĞtokenºÍ
-%       t_NonoTokenSumRow           :Ã¿ĞĞtokenºÍ
+%       nonoWidth                   :å®½åº¦(åˆ—ä¸ªæ•°)
+%       nonoHeight                  :é«˜åº¦(è¡Œä¸ªæ•°)
+%       t_NonoTokenLine             :æ¯åˆ—token
+%       t_NonoTokenRow              :æ¯è¡Œtoken
+%       t_NonoTokenLengthLine       :åˆ—tokené•¿åº¦
+%       t_NonoTokenLengthRow        :è¡Œtokené•¿åº¦
+%       t_NonoTokenSumLine          :æ¯åˆ—tokenå’Œ
+%       t_NonoTokenSumRow           :æ¯è¡Œtokenå’Œ
 %       
 
-% ·Ö¸îÃ¿ĞĞ/ÁĞ×Ö·û
+% åˆ†å‰²æ¯è¡Œ/åˆ—å­—ç¬¦
 tokenTemp = strsplit(taskTokenStr,'/');
 
-% È·¶¨¾ØÕóĞĞÁĞ´óĞ¡
+% ç¡®å®šçŸ©é˜µè¡Œåˆ—å¤§å°
 if(ismember(length(tokenTemp),[10;20;30;40;50;60;100]))
-    % ÖÇÄÜ±æÈÏ
+    % æ™ºèƒ½è¾¨è®¤
     nonoWidthLine = length(tokenTemp)/2;
     nonoHeightRow = length(tokenTemp)/2;
 elseif(ismember(length(tokenTemp),[55]))
-    % ÖÇÄÜ±æÈÏ
+    % æ™ºèƒ½è¾¨è®¤
     nonoWidthLine = 25;
     nonoHeightRow = 30;
 else
     
-    % ÎŞ·¨ÖÇÄÜÈ·ÈÏ
-    fprintf('\tÎŞ·¨ÖÇÄÜÊ¶±ğ£¬ĞĞÁĞ×ÜÊıÎª%d\n',length(tokenTemp))
-    nonoWidthLine = input("    ÊäÈëWidth: ");
-    nonoHeightRow = input("    ÊäÈëHeight: ");
+    % æ— æ³•æ™ºèƒ½ç¡®è®¤
+    fprintf('\tæ— æ³•æ™ºèƒ½è¯†åˆ«ï¼Œè¡Œåˆ—æ€»æ•°ä¸º%d\n',length(tokenTemp))
+    nonoWidthLine = input("    è¾“å…¥Width: ");
+    nonoHeightRow = input("    è¾“å…¥Height: ");
     
-    % ÊäÈëÊÇ·ñÕıÈ·
+    % è¾“å…¥æ˜¯å¦æ­£ç¡®
     if(nonoWidthLine+nonoHeightRow ~= length(tokenTemp))
         fprintf('\n %d \t %d \t %d \n',nonoWidthLine,nonoHeightRow,length(tokenTemp));
-        error('¾ØÕóĞĞÁĞ×ÜÊı´íÎó')
+        error('çŸ©é˜µè¡Œåˆ—æ€»æ•°é”™è¯¯')
     end
 end
 
-% ÁĞTokenÓëToken³¤¶È,´óĞ¡Îª×Ü¿í¶È
+% åˆ—Tokenä¸Tokené•¿åº¦,å¤§å°ä¸ºæ€»å®½åº¦
 t_NonoTokenLine = cell(nonoWidthLine,1);
 t_NonoTokenLengthLine = zeros(nonoWidthLine,1);
 t_NonoTokenSumLine = zeros(nonoWidthLine,1);
 
-% ĞĞTokenÓëToken³¤¶È,´óĞ¡Îª×Ü¸ß¶È
+% è¡ŒTokenä¸Tokené•¿åº¦,å¤§å°ä¸ºæ€»é«˜åº¦
 t_NonoTokenRow = cell(nonoHeightRow,1);
 t_NonoTokenLengthRow = zeros(nonoHeightRow,1);
 t_NonoTokenSumRow = zeros(nonoHeightRow,1);
 
 for ii = 1:length(tokenTemp)
     
-    % ·Ö¸îÃ¿¸ötoken×Ö·û
+    % åˆ†å‰²æ¯ä¸ªtokenå­—ç¬¦
     tokenTemp2 = strsplit(tokenTemp{ii},'.');
 
-    % STRÀàĞÍcell×ªdoubleÀàĞÍ
+    % STRç±»å‹cellè½¬doubleç±»å‹
     tokenTemp3 = cellfun(@str2double,tokenTemp2)';
     
-    % ÏÈ¸³ÖµÁĞ£¬ÔÙ¸³ÖµĞĞ
+    % å…ˆèµ‹å€¼åˆ—ï¼Œå†èµ‹å€¼è¡Œ
     if(ii <= nonoWidthLine)
         t_NonoTokenLine{ii} = tokenTemp3;
         t_NonoTokenLengthLine(ii) = length(tokenTemp2);
@@ -76,7 +76,7 @@ end
 if(sum(t_NonoTokenSumLine)~=sum(t_NonoTokenSumRow))
     fprintf('\n %d \t %d \t %d \n',nonoWidthLine,nonoHeightRow,length(tokenTemp));
     fprintf('\n %d \t %d \n',sum(t_NonoTokenSumLine),sum(t_NonoTokenSumRow));
-    error('ĞĞÁĞ×ÜÊı²»µÈ')
+    error('è¡Œåˆ—æ€»æ•°ä¸ç­‰')
 end
 
 end
