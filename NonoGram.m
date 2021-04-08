@@ -432,6 +432,9 @@ classdef NonoGram
             save('temp.mat','clickPos','-append');
             
             system('nGClick.py');
+            
+            % 删除temp.mat
+            delete temp.mat
         end
         
         function SavePuzzle(obj)
