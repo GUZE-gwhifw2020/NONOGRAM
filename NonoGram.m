@@ -80,6 +80,72 @@ classdef NonoGram
             
         end
         
+        function obj = NoBrainGuessRecur(obj)
+            %NOBRAINGUESSRECUR 无脑迭代猜测下一轮结果
+            
+            % 进行一轮跑
+            obj = obj.Genesis();
+            
+            if(any(obj.nGMatrix == obj.uTypeUnN))
+                % 随机猜测一个UNN为Black或White
+                
+                % 递归
+                try
+                    obj = obj.NoBrainGuess();
+                catch ME
+                    % 有错说明之前猜测错误
+                end
+            end
+        end
+        
+        function obj = NoBrainGuess(obj)
+            %NOBRAINGUESS 无脑迭代猜测下一轮结果,深度仅一层
+            
+            obj = obj.Genesis();
+            
+            while(any(obj.nGMatrix == obj.uTypeUnN,'all'))
+                bWhi = true;
+                bBlc = true;
+                
+                % 猜一个UNN为Black或White
+                indGuess = find(conv2(obj.nGMatrix ~= obj.uTypeUnN,ones(3),'same') ~= 0 & obj.nGMatrix == obj.uTypeUnN);
+                indGuess = indGuess(randi([1 length(indGuess)]));
+                
+                try
+                    % 添加白色
+                    obj1 = obj;
+                    obj1.nGMatrix(indGuess) = obj.uTypeWhite;
+                    obj1 = obj1.Genesis();
+                catch
+                    % 不能是白色的
+                    bWhi = false;
+                end
+                
+                try
+                    % 添加黑色
+                    obj2 = obj;
+                    obj2.nGMatrix(indGuess) = obj.uTypeBlack;
+                    obj2 = obj2.Genesis();
+                catch
+                    % 不能是黑色的
+                    bBlc = false;
+                end
+                
+                if(~bWhi && ~bBlc)
+                    error('Error:没救了。')
+                elseif(bWhi && bBlc)
+                    % 无法推测正确与否
+                elseif(bBlc)
+                    % 确认是黑色
+                    obj = obj2;
+                else
+                    % 确认是白色
+                    obj = obj1;
+                end
+            end
+            
+        end
+            
         function obj = Genesis(obj)
             %GENESIS 求解主循环
             % 1 - 起点逻辑矩阵初始化
@@ -366,6 +432,9 @@ classdef NonoGram
             save('temp.mat','clickPos','-append');
             
             system('nGClick.py');
+            
+            % 删除temp.mat
+            delete temp.mat
         end
         
         function SavePuzzle(obj)
@@ -376,7 +445,7 @@ classdef NonoGram
                 load tokSave.mat sizeWLHR tokStrCell
             else
                 sizeWLHR = [];
-                tokStrCell = cell();
+                tokStrCell = cell(0);
             end
             
             % 比较原有存储
@@ -389,7 +458,6 @@ classdef NonoGram
                 sizeWLHR(:, end + 1) = [obj.nGWidthLine;obj.nGHeightRow];
                 save tokSave.mat sizeWLHR tokStrCell
             end
-            
             
         end
     end
